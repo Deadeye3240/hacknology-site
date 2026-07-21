@@ -10,6 +10,12 @@ export interface NavItem {
   to: string;
 }
 
+/** Grouped navigation section for the navbar dropdown menus. */
+export interface NavGroup {
+  label: string;
+  items: NavItem[];
+}
+
 /** Homepage "what you can do here" feature. */
 export interface Feature {
   id: string;
@@ -29,7 +35,28 @@ export interface LearningPath {
   icon: IconComponent;
   level: Difficulty;
   moduleCount: number;
+  skills?: string[];
+  estimatedHours?: number;
+  estimatedMinutes?: number;
+  order?: number;
+  prerequisitePathId?: string;
+  specialization?: string;
+  practiceLinks?: { label: string; to: string; type: string }[];
 }
+
+/** @deprecated Use @/types/education Lesson — kept for gradual migration */
+export interface LegacyLesson {
+  id: string;
+  pathId: string;
+  title: string;
+  summary: string;
+  objectives: string[];
+  sections: { title: string; content: string }[];
+  estimatedMinutes: number;
+}
+
+/** Re-export education Lesson as the canonical type */
+export type { Lesson } from "@/types/education";
 
 /** Category groupings for hands-on labs. */
 export type LabCategory =

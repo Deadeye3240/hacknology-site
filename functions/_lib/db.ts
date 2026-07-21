@@ -310,7 +310,7 @@ export class Db {
   async listDiscussions(categoryId?: string, search?: string) {
     let sql = `
       SELECT d.id, d.category_id, d.title, d.locked, d.removed, d.created_at, d.updated_at,
-             u.username AS author_username, u.display_name AS author_display_name,
+             u.username AS author_username, u.display_name AS author_display_name, u.avatar AS author_avatar,
              c.name AS category_name, c.slug AS category_slug,
              (SELECT COUNT(*) FROM forum_replies r WHERE r.discussion_id = d.id AND r.removed = 0) AS reply_count
       FROM forum_discussions d
@@ -366,7 +366,8 @@ export class Db {
     const res = await this.d1
       .prepare(
         `SELECT r.id, r.author_id, r.content, r.removed, r.created_at, r.updated_at,
-                u.username AS author_username, u.display_name AS author_display_name, u.role AS author_role
+                u.username AS author_username, u.display_name AS author_display_name,
+                u.avatar AS author_avatar, u.role AS author_role
          FROM forum_replies r
          JOIN users u ON u.id = r.author_id
          WHERE r.discussion_id = ?

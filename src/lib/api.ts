@@ -25,7 +25,7 @@ export class ApiError extends Error {
   }
 }
 
-type Method = "GET" | "POST" | "PATCH" | "DELETE";
+type Method = "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
 
 async function request<T>(method: Method, path: string, body?: unknown): Promise<T> {
   const headers: Record<string, string> = {};
@@ -35,7 +35,7 @@ async function request<T>(method: Method, path: string, body?: unknown): Promise
   let res: Response;
   try {
     res = await fetch(`/api${path}`, {
-      method,
+      method: method === "PUT" ? "PUT" : method,
       credentials: "same-origin",
       headers,
       body: body !== undefined ? JSON.stringify(body) : undefined,
@@ -72,5 +72,30 @@ export const api = {
   get: <T>(path: string) => request<T>("GET", path),
   post: <T>(path: string, body?: unknown) => request<T>("POST", path, body),
   patch: <T>(path: string, body?: unknown) => request<T>("PATCH", path, body),
+  put: <T>(path: string, body?: unknown) => request<T>("PUT", path, body),
   del: <T>(path: string, body?: unknown) => request<T>("DELETE", path, body),
+  upload: async <T>(path: string, formData: FormData): Promise<T> => {
+    const headers: Record<string, string> = {};
+    if (csrfToken) headers["X-CSRF-Token"] = csrfToken;
+    const res = await fetch(`/api${path}`, {
+      method: "POST",
+      credentials: "same-origin",
+      headers,
+      body: formData,
+    });
+    const raw = await res.text();
+    let data: Record<string, unknown> = {};
+    if (raw) {
+      try {
+        data = JSON.parse(raw) as Record<string, unknown>;
+      } catch {
+        if (!res.ok) throw new ApiError(res.status, "Unexpected server response.");
+      }
+    }
+    if (!res.ok) {
+      const message = typeof data.error === "string" ? data.error : "Upload failed.";
+      throw new ApiError(res.status, message);
+    }
+    return data as T;
+  },
 };

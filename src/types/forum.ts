@@ -19,12 +19,14 @@ export interface DiscussionListItem {
   updated_at: string;
   author_username: string;
   author_display_name: string;
+  author_avatar: string | null;
   reply_count: number;
 }
 
-export interface DiscussionAuthor {
+export interface ForumAuthor {
   username: string;
   displayName: string;
+  avatar: string | null;
   role: Role;
 }
 
@@ -37,7 +39,7 @@ export interface DiscussionDetail {
   locked: boolean;
   createdAt: string;
   updatedAt: string;
-  author: DiscussionAuthor | null;
+  author: ForumAuthor | null;
   canEdit: boolean;
   canDelete: boolean;
   canModerate: boolean;
@@ -49,7 +51,7 @@ export interface ReplyItem {
   removed: boolean;
   createdAt: string;
   updatedAt: string;
-  author: { username: string; displayName: string; role: Role };
+  author: Pick<ForumAuthor, "username" | "displayName" | "avatar" | "role">;
   canEdit: boolean;
   canDelete: boolean;
 }

@@ -3,6 +3,8 @@
 /** Bindings and environment variables available to Pages Functions. */
 export interface Env {
   DB: D1Database;
+  /** R2 bucket for CMS uploads (optional until bucket is provisioned). */
+  MEDIA?: R2Bucket;
   /** One-time bootstrap password for the initial admin (secret). */
   ADMIN_INITIAL_PASSWORD?: string;
   /** Session lifetime in days (string env var); defaults to 30. */

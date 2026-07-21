@@ -17,6 +17,13 @@ binding = "DB"
 database_name = "hacknology-db"
 database_id = "dc3a2356-a8de-41fd-ba48-c5d746b6400d"
 
+# R2 bucket for CMS media and downloadable resources.
+# Create with: wrangler r2 bucket create hacknology-media
+# Then bind in the Cloudflare Pages project dashboard if not using wrangler.toml locally.
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "hacknology-media"
+
 # Non-secret defaults. Override SESSION_TTL_DAYS if desired.
 [vars]
 SESSION_TTL_DAYS = "30"

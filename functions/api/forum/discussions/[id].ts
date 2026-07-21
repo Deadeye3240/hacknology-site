@@ -31,7 +31,12 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env, params })
       createdAt: d.created_at,
       updatedAt: d.updated_at,
       author: author
-        ? { username: author.username, displayName: author.display_name, role: author.role }
+        ? {
+            username: author.username,
+            displayName: author.display_name,
+            avatar: author.avatar,
+            role: author.role,
+          }
         : null,
       canEdit: viewerId === d.author_id && d.locked === 0,
       canDelete: viewerId === d.author_id || isMod,
@@ -49,6 +54,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env, params })
         author: {
           username: row.author_username,
           displayName: row.author_display_name,
+          avatar: row.author_avatar,
           role: row.author_role,
         },
         canEdit: viewerId === row.author_id && !removed && d.locked === 0,

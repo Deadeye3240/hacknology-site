@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 import { Modal } from "@/components/ui/Modal";
+import { Avatar } from "@/components/ui/Avatar";
 import { TextField, TextAreaField } from "@/components/ui/TextField";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LockIcon } from "@/components/ui/icons";
@@ -219,13 +220,20 @@ export default function DiscussionPage() {
           ) : (
             <>
               <h1 className="text-2xl font-bold text-white">{detail.title}</h1>
-              <div className="flex flex-wrap items-center gap-2 text-sm text-slate-400">
-                <span className="font-medium text-slate-200">
-                  {detail.author?.displayName ?? "Unknown"}
-                </span>
-                {detail.author && <RoleTag role={detail.author.role} />}
-                <span aria-hidden>·</span>
-                <span>{formatDate(detail.createdAt)}</span>
+              <div className="flex items-center gap-3">
+                <Avatar
+                  name={detail.author?.displayName ?? "Unknown"}
+                  avatar={detail.author?.avatar}
+                  size="md"
+                />
+                <div className="flex flex-wrap items-center gap-2 text-sm text-slate-400">
+                  <span className="font-medium text-slate-200">
+                    {detail.author?.displayName ?? "Unknown"}
+                  </span>
+                  {detail.author && <RoleTag role={detail.author.role} />}
+                  <span aria-hidden>·</span>
+                  <span>{formatDate(detail.createdAt)}</span>
+                </div>
               </div>
               <p className="whitespace-pre-wrap text-pretty leading-relaxed text-slate-300">
                 {detail.content}
@@ -276,7 +284,14 @@ export default function DiscussionPage() {
             {replies.length} {replies.length === 1 ? "reply" : "replies"}
           </h2>
           {replies.map((reply) => (
-            <Card key={reply.id} className="flex flex-col gap-3 p-5">
+            <Card key={reply.id} className="flex gap-3 p-5">
+              <Avatar
+                name={reply.author.displayName}
+                avatar={reply.author.avatar}
+                size="sm"
+                className="mt-0.5"
+              />
+              <div className="flex min-w-0 flex-1 flex-col gap-3">
               <div className="flex flex-wrap items-center gap-2 text-sm text-slate-400">
                 <span className="font-medium text-slate-200">{reply.author.displayName}</span>
                 <RoleTag role={reply.author.role} />
@@ -344,6 +359,7 @@ export default function DiscussionPage() {
                   </div>
                 </>
               )}
+              </div>
             </Card>
           ))}
         </div>

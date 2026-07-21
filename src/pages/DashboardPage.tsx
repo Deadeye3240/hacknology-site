@@ -5,11 +5,16 @@ import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
-import { LayersIcon, FlaskIcon, BookIcon, SparklesIcon } from "@/components/ui/icons";
+import { LayersIcon, FlaskIcon, BookIcon, SparklesIcon, TargetIcon, RadarIcon } from "@/components/ui/icons";
 import { useAuth } from "@/context/AuthContext";
+import { useVulnerableLab } from "@/context/VulnerableLabContext";
+import { useLessonProgress } from "@/context/LessonProgressContext";
+import { useScanMe } from "@/context/ScanMeContext";
 import { api } from "@/lib/api";
 import { formatDate, timeAgo } from "@/lib/date";
 import { labs, getLabById } from "@/data/labs";
+import { achievements } from "@/data/achievements";
+import { vulnerableLabs } from "@/data/vulnerableLabs";
 import { localLabProgressCount, migrateLabProgress } from "@/lib/progressMigration";
 import { paths } from "@/routes/paths";
 
@@ -17,11 +22,6 @@ interface LabProgressRow {
   labId: string;
   status: "in_progress" | "completed";
   startedAt: string | null;
-  completedAt: string | null;
-}
-interface LessonProgressRow {
-  lessonId: string;
-  completed: boolean;
   completedAt: string | null;
 }
 
@@ -49,20 +49,19 @@ function StatCard({
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const { totalXp: vulnXp, completedIds, unlockedAchievements } = useVulnerableLab();
+  const { totalXp: lessonXp, completedIds: lessonCompletedIds } = useLessonProgress();
+  const { totalXp: scanMeXp } = useScanMe();
+  const totalLearningXp = lessonXp + vulnXp + scanMeXp;
   const [labProgress, setLabProgress] = useState<LabProgressRow[]>([]);
-  const [lessonProgress, setLessonProgress] = useState<LessonProgressRow[]>([]);
   const [localCount, setLocalCount] = useState(0);
   const [migrating, setMigrating] = useState(false);
   const [migrateMsg, setMigrateMsg] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
-      const [labsRes, lessonsRes] = await Promise.all([
-        api.get<{ labs: LabProgressRow[] }>("/progress/labs"),
-        api.get<{ lessons: LessonProgressRow[] }>("/progress/lessons"),
-      ]);
+      const labsRes = await api.get<{ labs: LabProgressRow[] }>("/progress/labs");
       setLabProgress(labsRes.labs);
-      setLessonProgress(lessonsRes.lessons);
     } catch {
       // Non-fatal: dashboard still renders with zeroed progress.
     }
@@ -74,8 +73,6 @@ export default function DashboardPage() {
   }, [load]);
 
   const labsCompleted = labProgress.filter((l) => l.status === "completed").length;
-  const labsInProgress = labProgress.filter((l) => l.status === "in_progress").length;
-  const lessonsCompleted = lessonProgress.filter((l) => l.completed).length;
   const overall = labs.length > 0 ? Math.round((labsCompleted / labs.length) * 100) : 0;
 
   const recent = [...labProgress]
@@ -130,11 +127,72 @@ export default function DashboardPage() {
           {migrateMsg && <Alert variant="success">{migrateMsg}</Alert>}
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCard icon={SparklesIcon} label="Total learning XP" value={String(totalLearningXp)} />
+            <StatCard icon={BookIcon} label="Lessons completed" value={String(lessonCompletedIds.length)} />
             <StatCard icon={FlaskIcon} label="Labs completed" value={String(labsCompleted)} />
-            <StatCard icon={LayersIcon} label="Labs in progress" value={String(labsInProgress)} />
-            <StatCard icon={BookIcon} label="Lessons completed" value={String(lessonsCompleted)} />
-            <StatCard icon={SparklesIcon} label="Overall lab progress" value={`${overall}%`} />
+            <StatCard icon={LayersIcon} label="Overall lab progress" value={`${overall}%`} />
           </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <StatCard icon={TargetIcon} label="Vulnerable Lab XP" value={String(vulnXp)} />
+            <StatCard
+              icon={TargetIcon}
+              label="Challenges solved"
+              value={`${completedIds.length} / ${vulnerableLabs.length}`}
+            />
+            <StatCard icon={RadarIcon} label="ScanMe XP" value={String(scanMeXp)} />
+          </div>
+
+          {unlockedAchievements.length > 0 && (
+            <Card>
+              <h2 className="mb-4 text-lg font-semibold text-white">Vulnerable Lab achievements</h2>
+              <div className="flex flex-wrap gap-2">
+                {achievements
+                  .filter((a) => unlockedAchievements.some((u) => u.achievementId === a.id))
+                  .map((a) => (
+                    <Badge key={a.id} variant="success">
+                      {a.title} (+{a.xpBonus} XP)
+                    </Badge>
+                  ))}
+              </div>
+            </Card>
+          )}
+
+          <Card className="flex flex-col gap-3 border-accent-400/20 bg-accent-400/[0.03] sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-base font-semibold text-white">Learning Center</h2>
+              <p className="text-sm text-slate-400">
+                Structured lessons, knowledge checks, and path certifications.
+              </p>
+            </div>
+            <Button to={paths.lessons} className="shrink-0">
+              Go to Learn
+            </Button>
+          </Card>
+
+          <Card className="flex flex-col gap-3 border-accent-400/20 bg-accent-400/[0.03] sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-base font-semibold text-white">Web Security Playground</h2>
+              <p className="text-sm text-slate-400">
+                Practice exploits safely in isolated, client-side simulations.
+              </p>
+            </div>
+            <Button to={paths.vulnerableLab} variant="secondary" className="shrink-0">
+              Enter Vulnerable Lab
+            </Button>
+          </Card>
+
+          <Card className="flex flex-col gap-3 border-emerald-400/20 bg-emerald-400/[0.03] sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-base font-semibold text-white">ScanMe Lab</h2>
+              <p className="text-sm text-slate-400">
+                Authorized Nmap reconnaissance against an isolated training target.
+              </p>
+            </div>
+            <Button to={paths.scanme} variant="secondary" className="shrink-0">
+              Open ScanMe
+            </Button>
+          </Card>
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <Card className="lg:col-span-2">

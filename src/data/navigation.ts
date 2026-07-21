@@ -1,12 +1,47 @@
-import type { NavItem } from "@/types";
+import type { NavGroup, NavItem } from "@/types";
+import { paths } from "@/routes/paths";
 
-/** Primary navigation shown in the navbar (and mirrored in the footer). */
+/** Grouped navigation for the navbar dropdown menus. */
+export const navGroups: NavGroup[] = [
+  {
+    label: "Learn",
+    items: [
+      { label: "Lessons", to: paths.lessons },
+      { label: "Resources", to: paths.resources },
+    ],
+  },
+  {
+    label: "Practice",
+    items: [
+      { label: "Labs", to: paths.labs },
+      { label: "ScanMe", to: paths.scanme },
+      { label: "Vulnerable Lab", to: paths.vulnerableLab },
+      { label: "Nerd Games", to: paths.games },
+    ],
+  },
+  {
+    label: "Community",
+    items: [{ label: "Forum", to: paths.forum }],
+  },
+  {
+    label: "More",
+    items: [
+      { label: "Tools", to: paths.tools },
+      { label: "About", to: paths.about },
+    ],
+  },
+];
+
+/** Primary navigation shown in the footer (flat list of all main routes). */
 export const primaryNav: NavItem[] = [
-  { label: "Home", to: "/" },
-  { label: "Lessons", to: "/lessons" },
-  { label: "Labs", to: "/labs" },
-  { label: "Tools", to: "/tools" },
-  { label: "Scan", to: "/scan" },
-  { label: "Resources", to: "/resources" },
-  { label: "About", to: "/about" },
+  { label: "Home", to: paths.home },
+  { label: "Lessons", to: paths.lessons },
+  { label: "Labs", to: paths.labs },
+  { label: "Tools", to: paths.tools },
+  { label: "ScanMe", to: paths.scanme },
+  { label: "Resources", to: paths.resources },
+  { label: "Forum", to: paths.forum },
+  { label: "Nerd Games", to: paths.games },
+  { label: "Vulnerable Lab", to: paths.vulnerableLab },
+  { label: "About", to: paths.about },
 ];

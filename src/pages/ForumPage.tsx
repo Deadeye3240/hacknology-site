@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { SecurityNotice } from "@/components/ui/SecurityNotice";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Avatar } from "@/components/ui/Avatar";
 import { UsersIcon, LockIcon } from "@/components/ui/icons";
 import { api } from "@/lib/api";
 import { timeAgo } from "@/lib/date";
@@ -136,18 +137,26 @@ export default function ForumPage() {
                 <li key={d.id}>
                   <Link to={`${paths.forum}/${d.id}`} className="block">
                     <Card interactive className="flex items-center justify-between gap-4 p-5">
-                      <div className="flex min-w-0 flex-col gap-1.5">
-                        <div className="flex items-center gap-2">
-                          {d.locked === 1 && <LockIcon className="text-sm text-amber-300" />}
-                          <h3 className="truncate text-base font-semibold text-white">
-                            {d.title}
-                          </h3>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                          <Badge variant="neutral">{d.category_name}</Badge>
-                          <span>by {d.author_display_name}</span>
-                          <span aria-hidden>·</span>
-                          <span>updated {timeAgo(d.updated_at)}</span>
+                      <div className="flex min-w-0 items-start gap-3">
+                        <Avatar
+                          name={d.author_display_name}
+                          avatar={d.author_avatar}
+                          size="sm"
+                          className="mt-0.5"
+                        />
+                        <div className="flex min-w-0 flex-col gap-1.5">
+                          <div className="flex items-center gap-2">
+                            {d.locked === 1 && <LockIcon className="text-sm text-amber-300" />}
+                            <h3 className="truncate text-base font-semibold text-white">
+                              {d.title}
+                            </h3>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                            <Badge variant="neutral">{d.category_name}</Badge>
+                            <span>by {d.author_display_name}</span>
+                            <span aria-hidden>·</span>
+                            <span>updated {timeAgo(d.updated_at)}</span>
+                          </div>
                         </div>
                       </div>
                       <div className="flex shrink-0 flex-col items-end text-right">

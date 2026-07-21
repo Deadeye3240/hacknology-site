@@ -43,9 +43,10 @@ later **without restructuring** the app.
 | Styling      | [Tailwind CSS 3](https://tailwindcss.com) |
 | Routing      | [React Router 6](https://reactrouter.com) |
 | API / backend | [Cloudflare Pages Functions](https://developers.cloudflare.com/pages/functions/) (Workers runtime) |
-| Database     | [Cloudflare D1](https://developers.cloudflare.com/d1/) (SQLite) |
+| Database     | [Cloudflare D1](https://developers.cloudflare.com/d1/) (SQLite) — `hacknology-db`, binding `DB` |
+| Media (CMS)  | [Cloudflare R2](https://developers.cloudflare.com/r2/) — `hacknology-media`, binding `MEDIA` |
 | Auth         | Server-side sessions (HTTP-only cookies) + PBKDF2 password hashing + CSRF tokens |
-| Deployment   | [Cloudflare Pages](https://pages.cloudflare.com) (Git-based) |
+| Deployment   | [Cloudflare Pages](https://pages.cloudflare.com) (Git-based) + Pages Functions |
 
 **Security-sensitive logic runs only on the server.** No password hashes,
 secrets, or database credentials are ever sent to the browser. The frontend
@@ -61,10 +62,14 @@ Cloudflare-native stack that pairs with Pages with zero extra infrastructure:
 - **Cloudflare Pages Functions** (in `functions/`) provide the API under
   `/api/*`. They run in the Workers runtime, right next to the static site — no
   separate server to host, and they deploy automatically with the Pages build.
-- **Cloudflare D1** (SQLite) is the database, bound to Functions as `env.DB`.
-  All access is parameterised through a single data-access layer
-  (`functions/_lib/db.ts`), which prevents SQL injection and keeps storage
-  concerns in one place.
+- **Cloudflare D1** (SQLite) is the database — not “D2”; Cloudflare has no D2
+  product. The database is named **`hacknology-db`**, bound to Functions as
+  `env.DB`. All access is parameterised through data-access layers
+  (`functions/_lib/db.ts`, `functions/_lib/cms-db.ts`), which prevents SQL
+  injection and keeps storage concerns in one place.
+- **Cloudflare R2** stores CMS media and downloadable resources, bound as
+  `env.MEDIA` (bucket `hacknology-media`). Optional for local dev; required
+  for admin file uploads in production.
 - **Password hashing** uses **PBKDF2-HMAC-SHA-256** (100k iterations, per-user
   random salt) via the Web Crypto API — the only strong KDF available natively
   in the Workers runtime without bundling WASM. Plaintext passwords are never
@@ -231,10 +236,14 @@ This serves the built site and the API together (default `http://localhost:8788`
    | Node version           | `18` or higher  |
 
 4. Under **Settings → Functions → D1 database bindings**, bind variable name
-   `DB` to your `hacknology` database (this mirrors `wrangler.toml`).
-5. Under **Settings → Environment variables**, add the `ADMIN_INITIAL_PASSWORD`
+   `DB` to **`hacknology-db`** (this mirrors `wrangler.toml`).
+5. Under **Settings → Functions → R2 bucket bindings**, bind variable name
+   `MEDIA` to **`hacknology-media`** (create the bucket first:
+   `npx wrangler r2 bucket create hacknology-media`).
+6. Under **Settings → Environment variables**, add the `ADMIN_INITIAL_PASSWORD`
    secret.
-6. Save and deploy. Functions in `functions/` deploy automatically with the site.
+7. Save and deploy. Pages Functions in `functions/` deploy automatically with
+   the site.
 
 **SPA routing:** `public/_redirects` (`/* /index.html 200`) ensures client-side
 routes resolve on direct load/refresh. Pages serves `/api/*` via Functions
@@ -246,7 +255,8 @@ before falling back to the SPA.
 - [ ] `npx wrangler login`
 - [ ] `npm run db:migrate` (and `:local` for local dev)
 - [ ] Set `ADMIN_INITIAL_PASSWORD` secret (dashboard or `wrangler pages secret put`)
-- [ ] Bind `DB` to the D1 database in the Pages project
+- [ ] Bind `DB` → `hacknology-db` and `MEDIA` → `hacknology-media` in the Pages project
+- [ ] `npx wrangler r2 bucket create hacknology-media` (if not already created)
 - [ ] Visit `/setup` once to create the admin, then change the password
 
 ---

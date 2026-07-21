@@ -17,6 +17,10 @@ export const onRequestPatch: PagesFunction<Env> = async ({ request, env, params 
   if (!r || r.removed === 1) return notFound("Reply not found.");
   if (r.author_id !== auth.user.id) return forbidden("You can only edit your own replies.");
 
+  const discussion = await db.getDiscussion(r.discussion_id);
+  if (!discussion || discussion.removed === 1) return notFound("Discussion not found.");
+  if (discussion.locked === 1) return forbidden("This discussion is locked.");
+
   const body = await readJson(request);
   if (!body) return badRequest("Invalid request body.");
   const content = normalizeText((body as Record<string, unknown>).content, {

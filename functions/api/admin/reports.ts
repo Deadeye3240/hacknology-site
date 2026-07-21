@@ -1,24 +1,21 @@
 /// <reference types="@cloudflare/workers-types" />
 import type { Env } from "../../_lib/types";
 import { Db } from "../../_lib/db";
-import { ok, badRequest, unauthorized, forbidden, readJson, asString } from "../../_lib/http";
-import { getAuth, verifyCsrf, roleAtLeast } from "../../_lib/auth";
+import { ok, badRequest, readJson, asString } from "../../_lib/http";
+import { requireAdmin, requireAdminMutation } from "../../_lib/admin";
 
-/** GET /api/admin/reports — list reports (moderator/admin). */
+/** GET /api/admin/reports — list reports (admin only). */
 export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
-  const auth = await getAuth(env, request);
-  if (!auth) return unauthorized();
-  if (!roleAtLeast(auth.user.role, "moderator")) return forbidden();
+  const gate = await requireAdmin(env, request);
+  if (!gate.ok) return gate.response;
   const reports = await new Db(env.DB).listReports();
   return ok({ reports });
 };
 
 /** POST /api/admin/reports — mark a report reviewed or dismissed. */
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
-  const auth = await getAuth(env, request);
-  if (!auth) return unauthorized();
-  if (!roleAtLeast(auth.user.role, "moderator")) return forbidden();
-  if (!verifyCsrf(request, auth)) return forbidden("Invalid or missing CSRF token.");
+  const gate = await requireAdminMutation(env, request);
+  if (!gate.ok) return gate.response;
 
   const body = await readJson(request);
   if (!body) return badRequest("Invalid request body.");
@@ -31,7 +28,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   }
 
   const db = new Db(env.DB);
-  await db.reviewReport(id, status, auth.user.id);
-  await db.logAudit(auth.user.id, "report.review", "report", id, status);
+  await db.reviewReport(id, status, gate.auth.user.id);
+  await db.logAudit(gate.auth.user.id, "report.review", "report", id, status);
   return ok({ ok: true });
 };

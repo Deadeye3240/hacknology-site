@@ -145,3 +145,122 @@ INSERT OR IGNORE INTO forum_categories (id, name, description, slug, position) V
   ('cat-tools',     'Tools',                 'Discussion about security tooling and how to use it well.','tools',                 6),
   ('cat-labs',      'Labs',                  'Questions and discussion about the Hacknology labs.',      'labs',                  7),
   ('cat-offtopic',  'Off Topic',             'Everything else — introductions and community chat.',      'off-topic',             8);
+
+-- ---------------------------------------------------------------------------
+-- CMS: dynamic pages, lessons, resources, media, navigation, settings
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS cms_pages (
+  id           TEXT PRIMARY KEY,
+  slug         TEXT NOT NULL UNIQUE,
+  title        TEXT NOT NULL,
+  description  TEXT NOT NULL DEFAULT '',
+  seo_title    TEXT,
+  seo_description TEXT,
+  content      TEXT NOT NULL DEFAULT '{"blocks":[]}',
+  status       TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'published')),
+  author_id    TEXT REFERENCES users(id) ON DELETE SET NULL,
+  created_at   TEXT NOT NULL,
+  updated_at   TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_cms_pages_status ON cms_pages(status);
+CREATE INDEX IF NOT EXISTS idx_cms_pages_slug ON cms_pages(slug);
+
+CREATE TABLE IF NOT EXISTS cms_learning_paths (
+  id                   TEXT PRIMARY KEY,
+  path_id              TEXT NOT NULL UNIQUE,
+  title                TEXT NOT NULL,
+  description          TEXT NOT NULL DEFAULT '',
+  level                TEXT NOT NULL DEFAULT 'Beginner',
+  skills               TEXT NOT NULL DEFAULT '[]',
+  estimated_hours      REAL NOT NULL DEFAULT 0,
+  order_index          INTEGER NOT NULL DEFAULT 0,
+  prerequisite_path_id TEXT,
+  specialization       TEXT,
+  practice_links       TEXT NOT NULL DEFAULT '[]',
+  status               TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'published')),
+  created_at           TEXT NOT NULL,
+  updated_at           TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_cms_paths_status ON cms_learning_paths(status);
+
+CREATE TABLE IF NOT EXISTS cms_lessons (
+  id           TEXT PRIMARY KEY,
+  lesson_id    TEXT NOT NULL UNIQUE,
+  path_id      TEXT NOT NULL,
+  order_index  INTEGER NOT NULL DEFAULT 0,
+  title        TEXT NOT NULL,
+  summary      TEXT NOT NULL DEFAULT '',
+  payload      TEXT NOT NULL DEFAULT '{}',
+  status       TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'published')),
+  created_at   TEXT NOT NULL,
+  updated_at   TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_cms_lessons_path ON cms_lessons(path_id);
+CREATE INDEX IF NOT EXISTS idx_cms_lessons_status ON cms_lessons(status);
+
+CREATE TABLE IF NOT EXISTS cms_assessments (
+  id             TEXT PRIMARY KEY,
+  path_id        TEXT NOT NULL UNIQUE,
+  title          TEXT NOT NULL,
+  passing_score  INTEGER NOT NULL DEFAULT 70,
+  xp_reward      INTEGER NOT NULL DEFAULT 100,
+  questions      TEXT NOT NULL DEFAULT '[]',
+  status         TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'published')),
+  created_at     TEXT NOT NULL,
+  updated_at     TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS cms_resources (
+  id           TEXT PRIMARY KEY,
+  name         TEXT NOT NULL,
+  description  TEXT NOT NULL DEFAULT '',
+  category     TEXT NOT NULL DEFAULT 'Downloads',
+  visibility   TEXT NOT NULL DEFAULT 'public' CHECK (visibility IN ('public', 'hidden')),
+  file_key     TEXT,
+  file_name    TEXT,
+  file_type    TEXT,
+  file_size    INTEGER,
+  thumbnail_key TEXT,
+  website      TEXT,
+  resource_link TEXT,
+  created_at   TEXT NOT NULL,
+  updated_at   TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_cms_resources_visibility ON cms_resources(visibility);
+
+CREATE TABLE IF NOT EXISTS cms_media (
+  id          TEXT PRIMARY KEY,
+  file_key    TEXT NOT NULL UNIQUE,
+  file_name   TEXT NOT NULL,
+  mime_type   TEXT NOT NULL,
+  file_size   INTEGER NOT NULL,
+  alt_text    TEXT NOT NULL DEFAULT '',
+  uploaded_by TEXT REFERENCES users(id) ON DELETE SET NULL,
+  created_at  TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_cms_media_created ON cms_media(created_at);
+
+CREATE TABLE IF NOT EXISTS nav_groups (
+  id          TEXT PRIMARY KEY,
+  label       TEXT NOT NULL,
+  position    INTEGER NOT NULL DEFAULT 0,
+  created_at  TEXT NOT NULL,
+  updated_at  TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS nav_items (
+  id          TEXT PRIMARY KEY,
+  group_id    TEXT NOT NULL REFERENCES nav_groups(id) ON DELETE CASCADE,
+  label       TEXT NOT NULL,
+  url         TEXT NOT NULL,
+  position    INTEGER NOT NULL DEFAULT 0,
+  created_at  TEXT NOT NULL,
+  updated_at  TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_nav_items_group ON nav_items(group_id);
+
+CREATE TABLE IF NOT EXISTS site_settings (
+  key         TEXT PRIMARY KEY,
+  value       TEXT NOT NULL,
+  updated_at  TEXT NOT NULL
+);

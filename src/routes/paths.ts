@@ -19,6 +19,16 @@ export const paths = {
   forum: "/forum",
   forumNew: "/forum/new",
 
+  // Nerd Games
+  games: "/games",
+  game: (gameId: string) => `/games/${gameId}`,
+
+  // ScanMe lab (isolated recon target)
+  scanme: "/scanme",
+
+  // Vulnerable Lab (isolated sandbox)
+  vulnerableLab: "/vulnerable-lab",
+
   // Administration
   admin: "/admin",
 } as const;

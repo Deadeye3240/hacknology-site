@@ -18,8 +18,6 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
 
   const displayName = normalizeLine(b.displayName, 40);
   const bio = normalizeText(b.bio, { maxLength: 500, allowNewlines: true });
-  const avatarRaw = normalizeLine(b.avatar, 300);
-  const avatar = avatarRaw.length > 0 ? avatarRaw : null;
   const profilePublic = b.profilePublic !== false;
 
   const fields: Record<string, string> = {};
@@ -33,7 +31,12 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
 
   // Note: role, id and permissions are intentionally NOT read from the body.
   const db = new Db(env.DB);
-  await db.updateProfile(auth.user.id, { displayName, bio, avatar, profilePublic });
+  await db.updateProfile(auth.user.id, {
+    displayName,
+    bio,
+    avatar: auth.user.avatar,
+    profilePublic,
+  });
   const updated = await db.getUserById(auth.user.id);
   return ok({ user: updated ? toSelfUser(updated) : null });
 };
