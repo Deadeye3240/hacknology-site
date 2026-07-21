@@ -47,11 +47,15 @@ export interface DiscordNotificationSettings {
   lessons: boolean;
 }
 
+const SETTING_WEBHOOK_URL = "discord.webhook.url";
 const SETTING_USERNAME = "discord.webhook.username";
 const SETTING_AVATAR = "discord.webhook.avatar_url";
 const SETTING_NOTIFY_FORUM = "discord.notify.forum";
 const SETTING_NOTIFY_SIGNUPS = "discord.notify.signups";
 const SETTING_NOTIFY_LESSONS = "discord.notify.lessons";
+
+const DISCORD_WEBHOOK_URL_PATTERN =
+  /^https:\/\/(?:discord\.com|discordapp\.com)\/api\/webhooks\/\d+\/[\w-]+(?:\?.*)?$/i;
 
 const DEFAULT_PERSONA: DiscordPersona = {
   username: `${SITE_NAME} Bot`,
@@ -83,8 +87,39 @@ function isTruthySetting(value: string | null, defaultValue: boolean): boolean {
   return value === "1" || value.toLowerCase() === "true";
 }
 
-export function isDiscordConfigured(env: Env): boolean {
-  return Boolean(env.DISCORD_WEBHOOK_URL?.trim());
+export function isValidDiscordWebhookUrl(url: string): boolean {
+  return DISCORD_WEBHOOK_URL_PATTERN.test(url.trim());
+}
+
+/** Prefer Cloudflare secret; fall back to admin-saved URL in site settings. */
+export async function getDiscordWebhookUrl(env: Env, db: D1Database): Promise<string | null> {
+  const fromEnv = env.DISCORD_WEBHOOK_URL?.trim();
+  if (fromEnv) return fromEnv;
+  const fromDb = (await new CmsDb(db).getSetting(SETTING_WEBHOOK_URL))?.trim();
+  return fromDb && isValidDiscordWebhookUrl(fromDb) ? fromDb : null;
+}
+
+export async function isDiscordConfigured(env: Env, db: D1Database): Promise<boolean> {
+  return Boolean(await getDiscordWebhookUrl(env, db));
+}
+
+export async function getDiscordWebhookStatus(
+  env: Env,
+  db: D1Database,
+): Promise<{
+  configured: boolean;
+  webhookUrl: string | null;
+  webhookSource: "env" | "database" | null;
+}> {
+  const fromEnv = env.DISCORD_WEBHOOK_URL?.trim();
+  if (fromEnv) {
+    return { configured: true, webhookUrl: null, webhookSource: "env" };
+  }
+  const fromDb = (await new CmsDb(db).getSetting(SETTING_WEBHOOK_URL))?.trim() ?? null;
+  if (fromDb && isValidDiscordWebhookUrl(fromDb)) {
+    return { configured: true, webhookUrl: fromDb, webhookSource: "database" };
+  }
+  return { configured: false, webhookUrl: fromDb, webhookSource: null };
 }
 
 export async function getDiscordPersona(db: D1Database): Promise<DiscordPersona> {
@@ -114,6 +149,7 @@ export async function getDiscordNotificationSettings(
 }
 
 export const DISCORD_SETTING_KEYS = {
+  webhookUrl: SETTING_WEBHOOK_URL,
   username: SETTING_USERNAME,
   avatarUrl: SETTING_AVATAR,
   notifyForum: SETTING_NOTIFY_FORUM,
@@ -145,10 +181,11 @@ export function scheduleDiscord(ctx: DiscordContext, promise: Promise<unknown>):
 /** POST to the configured Discord webhook. Returns false when skipped or failed. */
 export async function sendDiscordWebhook(
   env: Env,
+  db: D1Database,
   payload: DiscordWebhookPayload,
   persona?: Partial<DiscordPersona>,
 ): Promise<boolean> {
-  const url = env.DISCORD_WEBHOOK_URL?.trim();
+  const url = await getDiscordWebhookUrl(env, db);
   if (!url) return false;
 
   const body: DiscordWebhookPayload = { ...payload };
@@ -189,7 +226,7 @@ export async function sendDiscordEmbed(
     ],
   };
   if (options?.content) payload.content = truncate(options.content, 2000);
-  return sendDiscordWebhook(env, payload, persona);
+  return sendDiscordWebhook(env, db, payload, persona);
 }
 
 async function shouldNotify(
@@ -197,7 +234,7 @@ async function shouldNotify(
   db: D1Database,
   kind: keyof DiscordNotificationSettings,
 ): Promise<boolean> {
-  if (!isDiscordConfigured(env)) return false;
+  if (!(await isDiscordConfigured(env, db))) return false;
   const settings = await getDiscordNotificationSettings(db);
   return settings[kind];
 }
@@ -307,7 +344,7 @@ export async function sendDiscordTest(
   env: Env,
   db: D1Database,
 ): Promise<{ ok: boolean; error?: string }> {
-  if (!isDiscordConfigured(env)) {
+  if (!(await isDiscordConfigured(env, db))) {
     return { ok: false, error: "Discord webhook URL is not configured." };
   }
   const ok = await sendDiscordEmbed(env, db, {
@@ -330,7 +367,7 @@ export async function sendDiscordAdminMessage(
     avatarUrl?: string;
   },
 ): Promise<{ ok: boolean; error?: string }> {
-  if (!isDiscordConfigured(env)) {
+  if (!(await isDiscordConfigured(env, db))) {
     return { ok: false, error: "Discord webhook URL is not configured." };
   }
 
@@ -366,6 +403,6 @@ export async function sendDiscordAdminMessage(
     ];
   }
 
-  const ok = await sendDiscordWebhook(env, payload, persona);
+  const ok = await sendDiscordWebhook(env, db, payload, persona);
   return ok ? { ok: true } : { ok: false, error: "Discord rejected the webhook request." };
 }

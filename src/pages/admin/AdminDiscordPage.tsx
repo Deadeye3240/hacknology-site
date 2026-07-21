@@ -8,6 +8,8 @@ import { api, ApiError } from "@/lib/api";
 
 interface DiscordConfig {
   configured: boolean;
+  webhookUrl: string | null;
+  webhookSource: "env" | "database" | null;
   persona: { username: string; avatarUrl: string | null };
   notifications: { forum: boolean; signups: boolean; lessons: boolean };
 }
@@ -35,6 +37,7 @@ const TEMPLATES = [
 
 export default function AdminDiscordPage() {
   const [config, setConfig] = useState<DiscordConfig | null>(null);
+  const [webhookUrl, setWebhookUrl] = useState("");
   const [persona, setPersona] = useState({ username: "", avatarUrl: "" });
   const [notifications, setNotifications] = useState({
     forum: true,
@@ -56,6 +59,7 @@ export default function AdminDiscordPage() {
   const load = useCallback(async () => {
     const res = await api.get<DiscordConfig>("/admin/discord");
     setConfig(res);
+    setWebhookUrl(res.webhookUrl ?? "");
     setPersona({
       username: res.persona.username,
       avatarUrl: res.persona.avatarUrl ?? "",
@@ -73,11 +77,13 @@ export default function AdminDiscordPage() {
     setBusy("settings");
     try {
       const res = await api.put<DiscordConfig & { saved: boolean }>("/admin/discord", {
+        webhookUrl,
         username: persona.username,
         avatarUrl: persona.avatarUrl,
         notifications,
       });
       setConfig(res);
+      setWebhookUrl(res.webhookUrl ?? "");
       setPersona({
         username: res.persona.username,
         avatarUrl: res.persona.avatarUrl ?? "",
@@ -136,6 +142,12 @@ export default function AdminDiscordPage() {
     }));
   }
 
+  const webhookReady = config?.configured === true;
+  const hasMessage =
+    message.content.trim().length > 0 ||
+    message.embedTitle.trim().length > 0 ||
+    message.embedDescription.trim().length > 0;
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center gap-3">
@@ -149,6 +161,33 @@ export default function AdminDiscordPage() {
 
       {error && <Alert variant="error">{error}</Alert>}
       {success && <Alert variant="success">{success}</Alert>}
+      {config && !config.configured && (
+        <Alert variant="info">
+          Paste your webhook URL above and click <strong>Save webhook &amp; settings</strong> to
+          enable Test and Send. Or set{" "}
+          <code className="text-accent-200">DISCORD_WEBHOOK_URL</code> as a Cloudflare secret.
+        </Alert>
+      )}
+      {config?.webhookSource === "env" && (
+        <Alert variant="success">
+          Webhook is active via Cloudflare secret. A saved URL below is kept as backup but the
+          secret takes priority.
+        </Alert>
+      )}
+
+      <Card className="flex flex-col gap-4 p-5">
+        <h3 className="text-sm font-semibold text-white">Webhook URL</h3>
+        <TextField
+          label="Discord webhook URL"
+          hint="Paste the full URL from Discord → channel → Integrations → Webhooks."
+          placeholder="https://discord.com/api/webhooks/..."
+          value={webhookUrl}
+          onChange={(e) => setWebhookUrl(e.target.value)}
+        />
+        <Button disabled={busy === "settings"} onClick={() => void saveSettings()}>
+          {busy === "settings" ? "Saving…" : "Save webhook & settings"}
+        </Button>
+      </Card>
 
       <Card className="flex flex-col gap-4 p-5">
         <h3 className="text-sm font-semibold text-white">Setup instructions</h3>
@@ -179,7 +218,7 @@ export default function AdminDiscordPage() {
           <Button
             variant="secondary"
             size="sm"
-            disabled={!config?.configured || busy === "test"}
+            disabled={!webhookReady || busy === "test"}
             onClick={() => void testWebhook()}
           >
             {busy === "test" ? "Sending…" : "Test webhook"}
@@ -230,9 +269,6 @@ export default function AdminDiscordPage() {
             Notify on lesson completions (off by default — can be noisy)
           </label>
         </div>
-        <Button disabled={busy === "settings"} onClick={() => void saveSettings()}>
-          {busy === "settings" ? "Saving…" : "Save persona & notifications"}
-        </Button>
       </Card>
 
       <Card className="flex flex-col gap-4 p-5">
@@ -281,7 +317,7 @@ export default function AdminDiscordPage() {
           />
         </div>
         <Button
-          disabled={!config?.configured || busy === "message"}
+          disabled={!webhookReady || !hasMessage || busy === "message"}
           onClick={() => void sendMessage()}
         >
           {busy === "message" ? "Sending…" : "Send to Discord"}

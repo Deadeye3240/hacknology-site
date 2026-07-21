@@ -8,7 +8,8 @@ import {
   DISCORD_SETTING_KEYS,
   getDiscordNotificationSettings,
   getDiscordPersona,
-  isDiscordConfigured,
+  getDiscordWebhookStatus,
+  isValidDiscordWebhookUrl,
 } from "../../_lib/discord";
 
 function boolToSetting(value: unknown, fallback: boolean): string {
@@ -22,13 +23,16 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   const gate = await requireAdmin(env, request);
   if (!gate.ok) return gate.response;
 
-  const [persona, notifications] = await Promise.all([
+  const [persona, notifications, webhook] = await Promise.all([
     getDiscordPersona(env.DB),
     getDiscordNotificationSettings(env.DB),
+    getDiscordWebhookStatus(env, env.DB),
   ]);
 
   return ok({
-    configured: isDiscordConfigured(env),
+    configured: webhook.configured,
+    webhookUrl: webhook.webhookUrl,
+    webhookSource: webhook.webhookSource,
     persona,
     notifications,
   });
@@ -46,6 +50,13 @@ export const onRequestPut: PagesFunction<Env> = async ({ request, env }) => {
   const cms = new CmsDb(env.DB);
   const settings: Record<string, string> = {};
 
+  if ("webhookUrl" in b) {
+    const webhookUrl = asString(b.webhookUrl).trim();
+    if (webhookUrl && !isValidDiscordWebhookUrl(webhookUrl)) {
+      return badRequest("Enter a valid Discord webhook URL.");
+    }
+    settings[DISCORD_SETTING_KEYS.webhookUrl] = webhookUrl;
+  }
   if ("username" in b) {
     const username = asString(b.username).slice(0, 80);
     settings[DISCORD_SETTING_KEYS.username] = username || "Hacknology Bot";
@@ -80,10 +91,18 @@ export const onRequestPut: PagesFunction<Env> = async ({ request, env }) => {
     JSON.stringify(Object.keys(settings)),
   );
 
-  const [persona, notifications] = await Promise.all([
+  const [persona, notifications, webhook] = await Promise.all([
     getDiscordPersona(env.DB),
     getDiscordNotificationSettings(env.DB),
+    getDiscordWebhookStatus(env, env.DB),
   ]);
 
-  return ok({ saved: true, configured: isDiscordConfigured(env), persona, notifications });
+  return ok({
+    saved: true,
+    configured: webhook.configured,
+    webhookUrl: webhook.webhookUrl,
+    webhookSource: webhook.webhookSource,
+    persona,
+    notifications,
+  });
 };
