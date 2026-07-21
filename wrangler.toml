@@ -1,0 +1,22 @@
+# Cloudflare configuration for Hacknology (Pages + Pages Functions + D1).
+#
+# The frontend is a static Vite build in ./dist and the backend API lives in
+# ./functions (Cloudflare Pages Functions). A D1 database provides storage.
+#
+# Secrets (ADMIN_INITIAL_PASSWORD, etc.) are NOT stored here — set them with
+# `wrangler pages secret put <NAME>` or in the Cloudflare dashboard.
+
+name = "hacknology-site"
+compatibility_date = "2024-11-06"
+pages_build_output_dir = "dist"
+
+# D1 database binding. The binding name (DB) must match the Pages project
+# binding and the code in functions/_lib.
+[[d1_databases]]
+binding = "DB"
+database_name = "hacknology-db"
+database_id = "dc3a2356-a8de-41fd-ba48-c5d746b6400d"
+
+# Non-secret defaults. Override SESSION_TTL_DAYS if desired.
+[vars]
+SESSION_TTL_DAYS = "30"

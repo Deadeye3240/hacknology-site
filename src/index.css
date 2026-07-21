@@ -1,0 +1,77 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  * {
+    @apply border-white/5;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-base-950 text-slate-300 font-sans antialiased;
+    min-height: 100vh;
+  }
+
+  /* Consistent, accessible focus styling */
+  :focus-visible {
+    @apply outline-none ring-2 ring-accent-400/70 ring-offset-2 ring-offset-base-950 rounded-md;
+  }
+
+  ::selection {
+    @apply bg-accent-400/25 text-white;
+  }
+}
+
+@layer components {
+  /* Subtle heading gradient used for brandmarks / hero titles */
+  .text-gradient {
+    @apply bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent;
+  }
+
+  .text-gradient-accent {
+    @apply bg-gradient-to-r from-accent-300 via-accent-400 to-brand-500 bg-clip-text text-transparent;
+  }
+
+  /* Faint layout container width */
+  .container-page {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+}
+
+@layer utilities {
+  .bg-hero-glow {
+    background:
+      radial-gradient(
+        50% 50% at 50% 0%,
+        rgba(34, 211, 238, 0.12) 0%,
+        rgba(59, 130, 246, 0.06) 40%,
+        rgba(5, 7, 13, 0) 75%
+      );
+  }
+}
+
+/* Thin, themed scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #05070d;
+}
+::-webkit-scrollbar-thumb {
+  background: #1a2234;
+  border-radius: 9999px;
+  border: 2px solid #05070d;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #223049;
+}
