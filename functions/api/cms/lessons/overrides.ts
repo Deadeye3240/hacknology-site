@@ -1,7 +1,7 @@
 /// <reference types="@cloudflare/workers-types" />
-import type { Env } from "../../_lib/types";
-import { CmsDb } from "../../_lib/cms-db";
-import { ok } from "../../_lib/http";
+import type { Env } from "../../../_lib/types";
+import { CmsDb } from "../../../_lib/cms-db";
+import { ok } from "../../../_lib/http";
 
 /** GET /api/cms/lessons/overrides — published CMS lesson/path overrides for client merge. */
 export const onRequestGet: PagesFunction<Env> = async ({ env }) => {

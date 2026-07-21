@@ -1,6 +1,6 @@
 /// <reference types="@cloudflare/workers-types" />
-import type { Env } from "../../_lib/types";
-import { notFound, serverError } from "../../_lib/http";
+import type { Env } from "../../../_lib/types";
+import { notFound, serverError } from "../../../_lib/http";
 
 /** GET /api/cms/files/* — serve uploaded files from R2. */
 export const onRequestGet: PagesFunction<Env> = async ({ env, params }) => {

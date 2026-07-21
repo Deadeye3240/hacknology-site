@@ -1,7 +1,7 @@
 /// <reference types="@cloudflare/workers-types" />
-import type { Env } from "../../_lib/types";
-import { CmsDb } from "../../_lib/cms-db";
-import { ok, notFound } from "../../_lib/http";
+import type { Env } from "../../../_lib/types";
+import { CmsDb } from "../../../_lib/cms-db";
+import { ok, notFound } from "../../../_lib/http";
 
 /** GET /api/cms/pages/:slug — public published page by slug. */
 export const onRequestGet: PagesFunction<Env> = async ({ env, params }) => {
