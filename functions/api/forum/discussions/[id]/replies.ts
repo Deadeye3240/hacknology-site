@@ -5,9 +5,10 @@ import { created, badRequest, unauthorized, forbidden, notFound, tooMany, readJs
 import { getAuth, verifyCsrf } from "../../../../_lib/auth";
 import { normalizeText } from "../../../../_lib/sanitize";
 import { validateForumContent } from "../../../../_lib/validate";
+import { notifyNewForumReply } from "../../../../_lib/discord";
 
 /** POST /api/forum/discussions/:id/replies — add a reply (authenticated). */
-export const onRequestPost: PagesFunction<Env> = async ({ request, env, params }) => {
+export const onRequestPost: PagesFunction<Env> = async ({ request, env, params, context }) => {
   const auth = await getAuth(env, request);
   if (!auth) return unauthorized();
   if (!verifyCsrf(request, auth)) return forbidden("Invalid or missing CSRF token.");
@@ -31,5 +32,14 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env, params }
   if (cErr) return badRequest("Please correct the errors below.", { content: cErr });
 
   const id = await db.createReply(d.id, auth.user.id, content);
+
+  void notifyNewForumReply(env, env.DB, context, {
+    discussionId: d.id,
+    discussionTitle: d.title,
+    replyId: id,
+    content,
+    authorUsername: auth.user.username,
+  });
+
   return created({ id });
 };

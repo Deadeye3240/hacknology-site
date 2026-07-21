@@ -46,7 +46,13 @@ export default function AdminSettingsPage() {
       <Card className="flex flex-col gap-4 p-5">
         <TextField label="Twitter / X URL" value={social.twitter} onChange={(e) => setSocial((s) => ({ ...s, twitter: e.target.value }))} />
         <TextField label="GitHub URL" value={social.github} onChange={(e) => setSocial((s) => ({ ...s, github: e.target.value }))} />
-        <TextField label="Discord URL" value={social.discord} onChange={(e) => setSocial((s) => ({ ...s, discord: e.target.value }))} />
+        <TextField
+          label="Discord invite URL"
+          value={social.discord}
+          onChange={(e) => setSocial((s) => ({ ...s, discord: e.target.value }))}
+          hint="Used for the homepage community card (e.g. https://discord.gg/R6JQy9b9ey)"
+          placeholder="https://discord.gg/R6JQy9b9ey"
+        />
         <Button onClick={() => void save()}>Save settings</Button>
       </Card>
     </div>

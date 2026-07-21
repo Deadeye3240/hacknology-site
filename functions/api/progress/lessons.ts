@@ -4,6 +4,7 @@ import { Db } from "../../_lib/db";
 import { ok, badRequest, unauthorized, forbidden, readJson, asString } from "../../_lib/http";
 import { getAuth, verifyCsrf } from "../../_lib/auth";
 import { normalizeLine } from "../../_lib/sanitize";
+import { notifyLessonCompleted } from "../../_lib/discord";
 
 export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   const auth = await getAuth(env, request);
@@ -18,7 +19,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   });
 };
 
-export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
+export const onRequestPost: PagesFunction<Env> = async ({ request, env, context }) => {
   const auth = await getAuth(env, request);
   if (!auth) return unauthorized();
   if (!verifyCsrf(request, auth)) return forbidden("Invalid or missing CSRF token.");
@@ -44,6 +45,21 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   const lessonId = normalizeLine(asString(b.lessonId), 120);
   if (!lessonId) return badRequest("lessonId is required.");
   const completed = b.completed !== false;
+
+  let wasCompleted = false;
+  if (completed) {
+    const existing = await db.getLessonProgress(auth.user.id);
+    wasCompleted = existing.some((row) => row.lesson_id === lessonId && row.completed === 1);
+  }
+
   await db.upsertLessonProgress(auth.user.id, lessonId, completed);
+
+  if (completed && !wasCompleted) {
+    void notifyLessonCompleted(env, env.DB, context, {
+      username: auth.user.username,
+      lessonId,
+    });
+  }
+
   return ok({ ok: true });
 };

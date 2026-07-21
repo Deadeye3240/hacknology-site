@@ -3,7 +3,7 @@
 # The frontend is a static Vite build in ./dist and the backend API lives in
 # ./functions (Cloudflare Pages Functions). A D1 database provides storage.
 #
-# Secrets (ADMIN_INITIAL_PASSWORD, etc.) are NOT stored here — set them with
+# Secrets (ADMIN_INITIAL_PASSWORD, DISCORD_WEBHOOK_URL, etc.) are NOT stored here — set them with
 # `wrangler pages secret put <NAME>` or in the Cloudflare dashboard.
 
 name = "hacknology-site"

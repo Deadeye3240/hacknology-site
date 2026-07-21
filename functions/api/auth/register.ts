@@ -11,8 +11,9 @@ import {
   validateEmail,
   validatePassword,
 } from "../../_lib/validate";
+import { notifyNewUserSignup } from "../../_lib/discord";
 
-export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
+export const onRequestPost: PagesFunction<Env> = async ({ request, env, context }) => {
   const db = new Db(env.DB);
   const ip = request.headers.get("CF-Connecting-IP") ?? "unknown";
   if (!(await db.rateLimit(`register:${ip}`, 10, 3600))) {
@@ -55,6 +56,10 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   try {
     const passwordHash = await hashPassword(password);
     const user = await db.createUser({ username, email, passwordHash });
+    void notifyNewUserSignup(env, env.DB, context, {
+      username: user.username,
+      userId: user.id,
+    });
     const session = await createSession(env, request, user);
     return created(
       { user: toSelfUser(user), csrfToken: session.csrfSecret },

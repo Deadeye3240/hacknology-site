@@ -11,6 +11,7 @@ import { ArrowRightIcon, LockIcon } from "@/components/ui/icons";
 import { features } from "@/data/features";
 import { learningPaths } from "@/data/learningPaths";
 import { featuredLabs } from "@/data/labs";
+import { DiscordCommunityCard } from "@/components/community/DiscordCommunityCard";
 import { site } from "@/lib/site";
 
 export default function HomePage() {
@@ -96,6 +97,19 @@ export default function HomePage() {
           {featuredLabs.map((lab) => (
             <LabCard key={lab.id} lab={lab} />
           ))}
+        </div>
+      </Section>
+
+      {/* Discord community */}
+      <Section className="pt-0">
+        <SectionHeader
+          align="center"
+          eyebrow="Community"
+          title="Join the Hacknology Discord"
+          description="Connect with other learners, get help, and hear about new content first."
+        />
+        <div className="mt-10">
+          <DiscordCommunityCard />
         </div>
       </Section>
 

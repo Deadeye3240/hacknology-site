@@ -5,6 +5,7 @@ import { ok, created, badRequest, unauthorized, forbidden, tooMany, readJson, as
 import { getAuth, verifyCsrf } from "../../_lib/auth";
 import { normalizeLine, normalizeText } from "../../_lib/sanitize";
 import { validateTitle, validateForumContent } from "../../_lib/validate";
+import { notifyNewForumDiscussion } from "../../_lib/discord";
 
 /** GET /api/forum/discussions?category=<id>&search=<q> */
 export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
@@ -16,7 +17,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
 };
 
 /** POST /api/forum/discussions — create a discussion (authenticated). */
-export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
+export const onRequestPost: PagesFunction<Env> = async ({ request, env, context }) => {
   const auth = await getAuth(env, request);
   if (!auth) return unauthorized();
   if (!verifyCsrf(request, auth)) return forbidden("Invalid or missing CSRF token.");
@@ -52,5 +53,15 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     title,
     content,
   });
+
+  const category = await db.getCategory(categoryId);
+  void notifyNewForumDiscussion(env, env.DB, context, {
+    discussionId: id,
+    title,
+    content,
+    categoryName: category?.name ?? "Forum",
+    authorUsername: auth.user.username,
+  });
+
   return created({ id });
 };

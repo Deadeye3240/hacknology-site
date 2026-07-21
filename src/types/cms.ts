@@ -81,6 +81,7 @@ export const ADMIN_SECTIONS = [
   { to: "/admin/homepage", label: "Homepage" },
   { to: "/admin/appearance", label: "Appearance" },
   { to: "/admin/settings", label: "Settings" },
+  { to: "/admin/discord", label: "Discord" },
   { to: "/admin/users", label: "Users" },
   { to: "/admin/reports", label: "Reports" },
 ] as const;

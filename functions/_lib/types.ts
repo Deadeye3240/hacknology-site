@@ -9,6 +9,8 @@ export interface Env {
   ADMIN_INITIAL_PASSWORD?: string;
   /** Session lifetime in days (string env var); defaults to 30. */
   SESSION_TTL_DAYS?: string;
+  /** Outbound Discord webhook URL (secret). */
+  DISCORD_WEBHOOK_URL?: string;
 }
 
 export type Role = "user" | "moderator" | "admin";
