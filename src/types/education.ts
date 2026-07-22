@@ -1,4 +1,5 @@
 import type { Difficulty } from "@/types";
+import type { LessonTerminalLab } from "@/types/lessonTerminal";
 
 /** Practice destination linked from a lesson. */
 export type PracticeType = "scanme" | "vulnerable-lab" | "games" | "labs";
@@ -52,6 +53,8 @@ export interface Lesson {
   conclusion: string;
   knowledgeCheck: QuizQuestion[];
   practiceLink?: PracticeLink;
+  /** Optional custom sandboxed terminal lab; auto-generated when omitted. */
+  terminal?: LessonTerminalLab;
   /** Legacy sections for backward compatibility in exports */
   sections?: { title: string; content: string }[];
 }

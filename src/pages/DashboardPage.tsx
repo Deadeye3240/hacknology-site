@@ -15,7 +15,7 @@ import { formatDate, timeAgo } from "@/lib/date";
 import { labs, getLabById } from "@/data/labs";
 import { achievements } from "@/data/achievements";
 import { vulnerableLabs } from "@/data/vulnerableLabs";
-import { localLabProgressCount, migrateLabProgress } from "@/lib/progressMigration";
+import { localLabProgressCount, localLessonProgressCount, migrateAllLessonProgress, migrateLabProgress } from "@/lib/progressMigration";
 import { paths } from "@/routes/paths";
 
 interface LabProgressRow {
@@ -54,9 +54,12 @@ export default function DashboardPage() {
   const { totalXp: scanMeXp } = useScanMe();
   const totalLearningXp = lessonXp + vulnXp + scanMeXp;
   const [labProgress, setLabProgress] = useState<LabProgressRow[]>([]);
-  const [localCount, setLocalCount] = useState(0);
+  const [localLabCount, setLocalLabCount] = useState(0);
+  const [localLessonCount, setLocalLessonCount] = useState(0);
   const [migrating, setMigrating] = useState(false);
+  const [migratingLessons, setMigratingLessons] = useState(false);
   const [migrateMsg, setMigrateMsg] = useState<string | null>(null);
+  const [lessonMigrateMsg, setLessonMigrateMsg] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -69,8 +72,27 @@ export default function DashboardPage() {
 
   useEffect(() => {
     void load();
-    setLocalCount(localLabProgressCount());
+    setLocalLabCount(localLabProgressCount());
+    setLocalLessonCount(localLessonProgressCount());
   }, [load]);
+
+  async function handleMigrateLessons() {
+    setMigratingLessons(true);
+    setLessonMigrateMsg(null);
+    try {
+      const { lessons, paths } = await migrateAllLessonProgress();
+      setLocalLessonCount(localLessonProgressCount());
+      setLessonMigrateMsg(
+        lessons + paths > 0
+          ? `Synced ${lessons} lesson${lessons === 1 ? "" : "s"} and ${paths} path certification${paths === 1 ? "" : "s"} to your account.`
+          : "No local lesson progress found to sync.",
+      );
+    } catch {
+      setLessonMigrateMsg("Could not sync lesson progress. Please try again.");
+    } finally {
+      setMigratingLessons(false);
+    }
+  }
 
   const labsCompleted = labProgress.filter((l) => l.status === "completed").length;
   const overall = labs.length > 0 ? Math.round((labsCompleted / labs.length) * 100) : 0;
@@ -87,7 +109,7 @@ export default function DashboardPage() {
     try {
       const count = await migrateLabProgress();
       await load();
-      setLocalCount(localLabProgressCount());
+      setLocalLabCount(localLabProgressCount());
       setMigrateMsg(
         count > 0
           ? `Synced ${count} local lab record${count === 1 ? "" : "s"} to your account.`
@@ -110,21 +132,36 @@ export default function DashboardPage() {
       />
       <PageContainer className="py-10">
         <div className="flex flex-col gap-8">
-          {localCount > 0 && (
+          {localLabCount > 0 && (
             <Card className="flex flex-col gap-4 border-accent-400/25 bg-accent-400/[0.04] sm:flex-row sm:items-center sm:justify-between">
               <div className="flex flex-col gap-1">
-                <h2 className="text-base font-semibold text-white">Sync your local progress</h2>
+                <h2 className="text-base font-semibold text-white">Sync your local lab progress</h2>
                 <p className="text-sm text-slate-400">
-                  You have {localCount} lab record{localCount === 1 ? "" : "s"} saved on this
+                  You have {localLabCount} lab record{localLabCount === 1 ? "" : "s"} saved on this
                   device. Sync them to your account so they follow you everywhere.
                 </p>
               </div>
               <Button onClick={handleMigrate} disabled={migrating} className="shrink-0">
-                {migrating ? "Syncing…" : "Sync now"}
+                {migrating ? "Syncing…" : "Sync labs"}
+              </Button>
+            </Card>
+          )}
+          {localLessonCount > 0 && (
+            <Card className="flex flex-col gap-4 border-accent-400/25 bg-accent-400/[0.04] sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-1">
+                <h2 className="text-base font-semibold text-white">Sync your local lesson progress</h2>
+                <p className="text-sm text-slate-400">
+                  You have {localLessonCount} completed lesson{localLessonCount === 1 ? "" : "s"} on
+                  this device. Sync lessons and path certifications to your account.
+                </p>
+              </div>
+              <Button onClick={handleMigrateLessons} disabled={migratingLessons} className="shrink-0">
+                {migratingLessons ? "Syncing…" : "Sync lessons"}
               </Button>
             </Card>
           )}
           {migrateMsg && <Alert variant="success">{migrateMsg}</Alert>}
+          {lessonMigrateMsg && <Alert variant="success">{lessonMigrateMsg}</Alert>}
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard icon={SparklesIcon} label="Total learning XP" value={String(totalLearningXp)} />

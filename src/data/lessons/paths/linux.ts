@@ -17,7 +17,7 @@ export const linuxLessons = [
       "Identify where logs, configs, and user data typically live",
     ],
     introduction:
-      "Linux treats nearly everything — disks, devices, processes, and network sockets — through a unified filesystem interface. Security analysts investigating breaches, administrators hardening servers, and penetration testers enumerating targets all need to navigate this hierarchy fluently. Knowing that /etc holds configuration, /var/log holds logs, and /tmp is world-writable helps you find evidence, misconfigurations, and persistence in minutes instead of hours.",
+      "Linux treats nearly everything — disks, devices, processes, and network sockets — through a unified filesystem interface. If you have never used Linux before: the **filesystem** is the folder structure starting at `/` (called root). Paths like `/home/student` or `/var/log` are absolute paths from root; the **terminal** is how administrators navigate and inspect those paths without a mouse.\n\nSecurity analysts investigating breaches, administrators hardening servers, and penetration testers enumerating targets all need to navigate this hierarchy fluently. Knowing that /etc holds configuration, /var/log holds logs, and /tmp is world-writable helps you find evidence, misconfigurations, and persistence in minutes instead of hours.",
     coreConcepts: [
       "/ is the root of the entire directory tree; all other paths descend from here.",
       "FHS defines standard locations: /bin and /sbin for essential binaries, /etc for configuration, /home for user data, /var for variable data like logs.",
@@ -30,7 +30,7 @@ export const linuxLessons = [
     realWorld:
       "Incident responders search /var/log, /home/*/.bash_history, and /tmp for attacker artifacts. Ransomware targets /home and mounted shares. Misconfigured world-writable cron scripts in /etc/cron.d enable privilege escalation. Disk forensics recovers deleted files by inode until blocks are overwritten.",
     scenario:
-      "A compromised web server runs as www-data. You find a suspicious script in /tmp/.x.sh and modified configs under /etc/apache2/. Map each path to its FHS role and explain why the attacker chose those locations.",
+      "A compromised web server runs as www-data. You find a suspicious script in /tmp/.x.sh and modified configs under /etc/apache2/. Map each path to its FHS role and explain why the attacker chose those locations. Then use the terminal lab to walk /etc and /var/log the way you would on the real server.",
     practical: [
       {
         kind: "code",
@@ -77,6 +77,8 @@ export const linuxLessons = [
         "/var holds data that changes during operation — logs, mail spools, caches.",
       ),
     ],
+    conclusion:
+      "You can explain FHS roles for /etc, /var/log, /home, and /tmp, and navigate to them in the terminal — the foundation for every Linux investigation.",
   }),
 
   createLesson({
@@ -92,7 +94,7 @@ export const linuxLessons = [
       "Apply tab completion and history to work faster and more accurately",
     ],
     introduction:
-      "The terminal is the primary interface on servers, cloud instances, and containers. GUIs are often disabled or absent in production. Fast, accurate navigation lets you triage incidents, audit permissions, and run tools without leaking typos into production commands. Every path you type is either absolute (starts with /) or relative to your current working directory.",
+      "The terminal is the primary interface on servers, cloud instances, and containers. GUIs are often disabled or absent in production. **If this is your first time in a shell:** the prompt (for example `student@hacknology-lab:~$`) shows who you are, which machine you are on, and your **current working directory** — the folder you are \"standing in\" right now.\n\nPaths are addresses inside the filesystem. An **absolute path** always starts with `/` (for example `/var/log`). A **relative path** starts from your current directory (for example `log` or `../etc`). Fast, accurate navigation lets you triage incidents, audit permissions, and run tools without typos that damage production systems.",
     coreConcepts: [
       "pwd prints the current working directory; cd changes it; cd .. goes up one level; cd ~ returns home.",
       "ls lists directory contents; -l long format, -a all including dotfiles, -h human-readable sizes.",
@@ -105,7 +107,7 @@ export const linuxLessons = [
     realWorld:
       "SOC analysts tail logs under /var/log during alerts. Pentesters enumerate /home and /opt after foothold. Admins use cd - to bounce between config and log directories. Scripting uses pushd/popd or explicit absolute paths for reliability.",
     scenario:
-      "You land in / after login. List hidden files in root's home, then navigate to systemd journal logs without using a GUI. Which commands and paths do you use?",
+      "You land in / after login. List hidden files in root's home, then navigate to systemd journal logs without using a GUI. Which commands and paths do you use?\n\nThe terminal lab walks this exact workflow: `pwd` → `ls -a` → `cd /var/log` → `cat auth.log`.",
     practical: [
       {
         kind: "code",
@@ -151,6 +153,8 @@ export const linuxLessons = [
         "Absolute paths start at the filesystem root; relative paths do not.",
       ),
     ],
+    conclusion:
+      "You can confirm your location with pwd, move with cd using absolute and relative paths, and list directory contents including hidden files — skills you practiced step-by-step in the terminal lab.",
   }),
 
   createLesson({
@@ -166,7 +170,7 @@ export const linuxLessons = [
       "Search file contents and names with grep and find",
     ],
     introduction:
-      "Investigations are mostly reading and searching files: configs, logs, scripts, and malware droppers. Administrators manage deployments by copying binaries and rotating logs. Mastering basic file operations — and their destructive counterparts — prevents accidental data loss and speeds analysis.",
+      "Investigations are mostly reading and searching files: configs, logs, scripts, and malware droppers. **Core commands you will use constantly:**\n\n- `cat` — print an entire file to the screen (fine for small files).\n- `head` / `tail` — show the first or last lines (essential for huge logs).\n- `grep` — search for text patterns inside files.\n- `find` — locate files by name or path.\n\nThe terminal lab focuses on `head` and navigation; reference examples below show `grep` and `tail -f` for live log monitoring.",
     coreConcepts: [
       "touch creates empty files or updates timestamps; mkdir creates directories; rm removes files; rmdir removes empty directories.",
       "cp copies; mv moves or renames; use -r for recursive directory operations.",
@@ -179,7 +183,7 @@ export const linuxLessons = [
     realWorld:
       "Forensics copies disk images with dd or specialized tools, then mounts read-only. DevOps uses rsync for sync (beyond cp). Attackers use find -writable to discover hijackable scripts. Blue teams grep for webshell signatures across web roots.",
     scenario:
-      "Auth.log grew to 10 GB. You need the last 200 SSH failures without opening the whole file in an editor. Which commands help?",
+      "Auth.log grew to 10 GB. You need the last 200 SSH failures without opening the whole file in an editor. Which commands help?\n\nIn the lab, use `head` on passwd to learn output limiting; in production you would combine `grep 'Failed password' auth.log | tail -n 200`.",
     practical: [
       {
         kind: "code",
@@ -225,6 +229,8 @@ export const linuxLessons = [
         "Renaming updates the directory entry; the inode often stays the same within one filesystem.",
       ),
     ],
+    conclusion:
+      "You can preview large files with head/tail, search text with grep, and navigate paths safely — avoiding the mistake of dumping multi-gigabyte logs to your screen.",
   }),
 
   createLesson({

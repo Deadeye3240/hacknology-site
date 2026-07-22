@@ -5,6 +5,7 @@ import type {
   PracticeLink,
   QuizQuestion,
 } from "@/types/education";
+import type { LessonTerminalLab } from "@/types/lessonTerminal";
 
 export interface TopicInput {
   id: string;
@@ -25,6 +26,9 @@ export interface TopicInput {
   defensive: string[];
   quiz: QuizQuestion[];
   practiceLink?: PracticeLink;
+  terminal?: LessonTerminalLab;
+  /** Optional lesson-specific summary; avoids generic boilerplate conclusions. */
+  conclusion?: string;
 }
 
 /** Build a fully structured lesson from topic metadata. */
@@ -47,9 +51,12 @@ export function createLesson(t: TopicInput): Lesson {
     terminology: t.terms,
     commonMistakes: t.mistakes,
     defensiveConsiderations: t.defensive,
-    conclusion: `You explored ${t.title.toLowerCase()} — how it works, why it matters in real incidents, and what defenders do to reduce risk. Apply these ideas in labs only on systems you own or have written permission to test.`,
+    conclusion:
+      t.conclusion ??
+      `You can now explain ${t.title.toLowerCase()} in your own words and apply the hands-on steps from this lesson in authorized lab environments only.`,
     knowledgeCheck: t.quiz,
     practiceLink: t.practiceLink,
+    terminal: t.terminal,
     sections: [
       { title: "Core concepts", content: t.coreConcepts.join(" ") },
       { title: "Deep dive", content: t.explanation },

@@ -37,7 +37,7 @@ export const webSecurityLessons = [
     realWorld:
       "Major breaches often chain multiple web-layer mistakes. An attacker might find an exposed admin panel (information disclosure), bypass login with SQL injection (broken authentication), then exfiltrate customer records (broken access control). Defenders map each component in the architecture diagram and ask: what can an unauthenticated user reach? What can a normal user escalate to? What leaves the network unencrypted?",
     scenario:
-      "You are reviewing a small e-commerce site. The marketing pages are static files on a CDN, but checkout hits an API on api.store.example. Login sets a session cookie; order history is fetched from /api/orders/{id}. Your job is to mark trust boundaries: where does user input first enter server-side code, and where must authorization be enforced?",
+      "You are reviewing a small e-commerce site. Marketing pages are static on a CDN; checkout hits api.store.example; login sets a session cookie; order history loads from /api/orders/{id}. Mark trust boundaries: where does user input first hit server-side code, and where must authorization run on every request?\n\nThen use the terminal lab: `curl` simulates the client request; listing `/var/www/html` shows where static content lives on the server.",
     practical: [
       {
         kind: "http",
@@ -84,6 +84,8 @@ export const webSecurityLessons = [
         "Trust boundaries mark where untrusted input or actors meet protected resources.",
       ),
     ],
+    conclusion:
+      "You can trace a page load from DNS through TLS to server-side logic and mark where authorization must be enforced — then verify paths on disk in the lab.",
     practiceLink: lab("info-leak", "Information Leak Lab"),
   }),
 

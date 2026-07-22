@@ -2,34 +2,87 @@
 
 > **Learn. Test. Defend.** — the official website for [hacknology.xyz](https://hacknology.xyz).
 
-Hacknology is a professional cybersecurity **education and training platform**. It is
-built to help students understand security concepts, practice in controlled
-environments, and develop responsible **defensive** security skills.
+Hacknology is a professional cybersecurity **education and training platform**. It helps
+students learn security concepts through structured lessons, hands-on terminal labs,
+authorized practice environments, and a moderated community — all focused on **defensive,
+authorized cybersecurity education**.
 
-The platform is strictly focused on **authorized cybersecurity education, defensive
-security, and controlled training environments**.
-
-This repository contains the frontend **and** a secure server-side backend:
-user accounts, authentication and sessions, a community forum with moderation,
-an administrator area, learning-progress tracking, and secure external-link
-warnings — all designed to run on Cloudflare Pages.
+This repository contains the full stack: React frontend, Cloudflare Pages Functions API,
+D1 database, R2 media storage, user accounts, forum, learning progress, gamification,
+and admin tooling — deployed on **Cloudflare Pages**.
 
 ---
 
-## 1. Project overview
+## 1. Platform features (current)
 
-The site provides a foundation for future features including:
+### Learning Center — 102 lessons, 9 paths
 
-- Cybersecurity lessons and educational learning paths
-- Authorized, hands-on cybersecurity labs
-- CTF-style educational challenges
-- Security tool resources and documentation
-- A simulated (educational) security assessment interface
-- Defensive security education for students
+Structured curriculum with sequential unlocks, knowledge checks, and path certifications:
 
-The architecture is intentionally layered so that authentication, student
-accounts, progress tracking, dashboards, and backend/API integration can be added
-later **without restructuring** the app.
+| Path | Lessons | Focus |
+|------|---------|--------|
+| Cybersecurity Fundamentals | 16 | CIA triad, risk, auth, crypto, social engineering |
+| Networking Fundamentals | 15 | OSI/TCP-IP, DNS, TLS, firewalls |
+| Linux for Cybersecurity | 12 | CLI, permissions, processes, logs, SSH |
+| Windows Security | 10 | Event logs, NTFS, PowerShell, Defender, AD |
+| Web Security | 12 | OWASP, injection, XSS, CSRF, IDOR |
+| Digital Forensics | 10 | Evidence handling, timelines, hashing |
+| SOC Analyst | 9 | SIEM, triage, IR lifecycle, documentation |
+| OSINT | 8 | Search operators, DNS, verification |
+| Nmap & Reconnaissance | 10 | Authorized scanning, port states, service detection |
+
+Each lesson includes:
+
+- **Authored prose** — objectives, scenarios, terminology, defensive guidance
+- **Sandboxed terminal lab** — 102 authored labs via a reusable terminal engine (`LessonTerminalLab`)
+- **Knowledge check** — 70% pass threshold, +25 XP per lesson
+- **Final path assessment** — unlocks dependent paths; certifications persist server-side in D1
+
+Progress is stored in `localStorage` for guests and synced to the server when logged in
+(`/api/progress/lessons`, `/api/progress/paths`). The Dashboard offers one-click migration
+from local storage to your account.
+
+### ScanMe — progressive Nmap teacher (`/scanme`)
+
+Interactive Nmap training with **20 missions** across **7 levels**:
+
+- Sequential mission unlock, hint penalties, ScanMe XP, and achievements
+- Simulated terminal output (no real network scanning)
+- Practice mode on completed missions; reset requires confirmation
+- Local progress via `ScanMeContext` (`localStorage`)
+
+### Vulnerable Lab (`/vulnerable-lab`)
+
+Isolated web security challenges with XP, achievements, and sandboxed scenarios.
+
+### Nerd Games (`/games`)
+
+Educational mini-games: Cyber Trivia, Crypto Puzzle, Terminal Challenge, Stick Rider.
+
+### Community forum (`/forum`)
+
+Redesigned community hub with compact feed UI:
+
+- Category filters, search, sort tabs (latest / trending / active / unanswered)
+- Markdown-style content with fenced code blocks
+- Create discussions (`/forum/new`), replies, edit/delete, lock, report
+- Moderation via admin reports; 8 seeded categories in D1
+
+### Account & dashboard
+
+- Registration, login, sessions (HTTP-only cookies + CSRF)
+- Profile with avatar upload (`/api/account/avatar`)
+- Dashboard: total learning XP (lessons + labs + ScanMe), progress sync cards
+- Learning roadmap on the Learn hub with specialization links
+
+### Admin & CMS
+
+- Admin area for users, reports, CMS pages, navigation, lessons, paths, media
+- CMS navigation merges with static defaults so core links (Forum, ScanMe, Lessons) are never dropped
+
+The platform layers **content** (`src/data/`) separately from **UI** so curriculum, labs, and
+navigation can evolve without restructuring routes. Security-sensitive logic always runs in
+Pages Functions.
 
 ---
 
@@ -249,15 +302,27 @@ This serves the built site and the API together (default `http://localhost:8788`
 routes resolve on direct load/refresh. Pages serves `/api/*` via Functions
 before falling back to the SPA.
 
-### 7.8 Manual steps checklist (things the repo can't do for you)
+### 7.8 Manual steps checklist
 
 - [x] `npx wrangler d1 create hacknology-db` and paste `database_id` into `wrangler.toml` *(done: `dc3a2356-…`)*
-- [ ] `npx wrangler login`
-- [ ] `npm run db:migrate` (and `:local` for local dev)
-- [ ] Set `ADMIN_INITIAL_PASSWORD` secret (dashboard or `wrangler pages secret put`)
+- [x] `npm run db:migrate` — apply `schema.sql` to production D1 (forum tables, category seeds, `path_progress`)
+- [ ] `npm run db:migrate:local` for local dev (optional)
+- [ ] Set `ADMIN_INITIAL_PASSWORD` secret if not already set
 - [ ] Bind `DB` → `hacknology-db` and `MEDIA` → `hacknology-media` in the Pages project
-- [ ] `npx wrangler r2 bucket create hacknology-media` (if not already created)
-- [ ] Visit `/setup` once to create the admin, then change the password
+- [ ] Visit `/setup` once to create the admin (first deploy only)
+
+See **`docs/CLOUDFLARE-DEPLOY.md`** for the full production deployment and smoke-test checklist.
+
+### 7.9 Manual deploy (CLI)
+
+If not using Git-based Pages deploy:
+
+```bash
+npm run build
+npx wrangler pages deploy dist --project-name hacknology-site
+```
+
+Ensure D1 binding `DB` and R2 binding `MEDIA` are configured on the Pages project before deploying.
 
 ---
 
@@ -274,7 +339,7 @@ hacknology-site/
 │   └── api/
 │       ├── auth/             # register, login, logout, me, setup
 │       ├── account/          # profile, password
-│       ├── progress/         # lessons, labs (+ migration)
+│       ├── progress/         # lessons, labs, paths (+ bulk migrate)
 │       ├── forum/            # categories, discussions, replies, reports
 │       └── admin/            # users, roles/status, reports, stats
 ├── src/
@@ -282,17 +347,28 @@ hacknology-site/
 │   │   ├── auth/             # AuthLayout
 │   │   ├── routing/          # ProtectedRoute (role-aware gate)
 │   │   ├── layout/ navigation/ ui/ cards/ labs/ tools/ resources/
-│   ├── context/              # AuthContext, ExternalLinkContext, LabProgressContext
-│   ├── data/                 # Content/data (labs, tools, resources, pages…)
-│   ├── hooks/                # Reusable hooks (useLockBodyScroll)
-│   ├── lib/                  # api, url, date, progressMigration, cn, site…
-│   ├── pages/                # Home, Labs, Forum, Dashboard, Admin, Login…
-│   ├── routes/               # Router config and path constants
-│   ├── types/                # Shared types (auth, forum, index)
-│   ├── App.tsx               # Providers + Router
-│   ├── main.tsx              # App entry point
-│   └── index.css             # Tailwind layers + global styles
-├── schema.sql                # D1 database schema (+ seeded forum categories)
+│   │   ├── education/        # KnowledgeCheck, LearningRoadmap, LessonTerminalLab
+│   │   ├── forum/            # CommunityShell, DiscussionRow, ForumContent, …
+│   │   ├── scanme/           # ScanMeTerminal, hints, mission complete
+│   │   ├── terminal/         # HacknologyTerminal (shared shell)
+│   │   └── vulnerableLab/    # Challenge UI
+│   ├── context/              # Auth, LessonProgress, ScanMe, VulnerableLab, LabProgress
+│   ├── data/
+│   │   ├── lessons/          # Curriculum (paths/, terminals/, registry)
+│   │   ├── scanme/           # Missions, levels, achievements
+│   │   └── …                 # labs, tools, resources, navigation, games
+│   ├── hooks/                # useCmsNavigation, useLockBodyScroll
+│   ├── lib/
+│   │   ├── lessonTerminal/   # Engine, VFS, validation
+│   │   ├── progressMigration.ts
+│   │   ├── navMerge.ts
+│   │   └── …
+│   ├── pages/                # Home, Lessons, ScanMe, Forum, Dashboard, Admin, …
+│   ├── routes/               # AppRoutes, paths
+│   └── types/                # auth, forum, education, lessonTerminal, gamification
+├── docs/
+│   └── CLOUDFLARE-DEPLOY.md  # Production migration & deploy checklist
+├── schema.sql                # D1 schema (+ forum seeds, path_progress)
 ├── wrangler.toml             # Pages + D1 configuration
 ├── .env.example              # Documents required env vars (NO real secrets)
 ├── index.html

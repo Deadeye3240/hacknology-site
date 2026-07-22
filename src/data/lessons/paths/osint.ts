@@ -34,7 +34,7 @@ export const osintLessons = [
     realWorld:
       "Threat intel teams profile ransomware groups via forum posts and leak sites. HR uses OSINT for background checks within legal limits. Crisis teams monitor social media during incidents.",
     scenario:
-      "Leadership asks whether customer data appeared on a paste site. Outline how OSINT fits into the response without accessing the dark web illegally.",
+      "Leadership asks whether customer data appeared on a paste site. Outline how OSINT fits into the response without accessing the dark web illegally.\n\nThe terminal lab practices passive DNS and WHOIS lookups — the same legal first steps for domain investigation.",
     terms: [
       { term: "OSINT", definition: "Open-Source Intelligence — intelligence from publicly available information." },
       { term: "Collection", definition: "Gathering raw data from identified sources per intelligence requirements." },
@@ -232,7 +232,7 @@ export const osintLessons = [
     realWorld:
       "Researchers found open S3 buckets via search engine indexing. Pen testers use dorks in scoped engagements listed in rules of engagement.",
     scenario:
-      "You are authorized to assess yourcompany.com. Write a search query to find indexed spreadsheet files on that domain.",
+      "You are authorized to assess yourcompany.com. Write a search query to find indexed spreadsheet files on that domain.\n\nThe lab uses `grep` on research-notes.txt to practice filtering — the same narrowing skill as `site:` and `filetype:` in search engines.",
     practical: [
       {
         kind: "command",

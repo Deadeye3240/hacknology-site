@@ -224,6 +224,44 @@ export class Db {
     return res.results ?? [];
   }
 
+  async getPathProgress(userId: string) {
+    const res = await this.d1
+      .prepare(
+        "SELECT path_id, assessment_score, completed_at FROM path_progress WHERE user_id = ?",
+      )
+      .bind(userId)
+      .all<{
+        path_id: string;
+        assessment_score: number | null;
+        completed_at: string;
+      }>();
+    return res.results ?? [];
+  }
+
+  async upsertPathProgress(
+    userId: string,
+    pathId: string,
+    assessmentScore: number | null,
+  ): Promise<void> {
+    await this.d1
+      .prepare(
+        `INSERT INTO path_progress (user_id, path_id, assessment_score, completed_at)
+         VALUES (?, ?, ?, ?)
+         ON CONFLICT(user_id, path_id) DO UPDATE SET
+           assessment_score = excluded.assessment_score,
+           completed_at = excluded.completed_at`,
+      )
+      .bind(userId, pathId, assessmentScore, this.now())
+      .run();
+  }
+
+  async deletePathProgress(userId: string, pathId: string): Promise<void> {
+    await this.d1
+      .prepare("DELETE FROM path_progress WHERE user_id = ? AND path_id = ?")
+      .bind(userId, pathId)
+      .run();
+  }
+
   async upsertLabProgress(
     userId: string,
     labId: string,
@@ -310,6 +348,7 @@ export class Db {
   async listDiscussions(categoryId?: string, search?: string) {
     let sql = `
       SELECT d.id, d.category_id, d.title, d.locked, d.removed, d.created_at, d.updated_at,
+             SUBSTR(REPLACE(REPLACE(d.content, char(10), ' '), '  ', ' '), 1, 180) AS content_excerpt,
              u.username AS author_username, u.display_name AS author_display_name, u.avatar AS author_avatar,
              c.name AS category_name, c.slug AS category_slug,
              (SELECT COUNT(*) FROM forum_replies r WHERE r.discussion_id = d.id AND r.removed = 0) AS reply_count

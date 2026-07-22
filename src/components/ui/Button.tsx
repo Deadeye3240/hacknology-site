@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { cn } from "@/lib/cn";
 
 export type ButtonVariant = "primary" | "secondary" | "ghost";
-export type ButtonSize = "sm" | "md" | "lg";
+export type ButtonSize = "xs" | "sm" | "md" | "lg";
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
@@ -15,6 +15,7 @@ const variantClasses: Record<ButtonVariant, string> = {
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
+  xs: "h-8 px-2.5 text-xs gap-1 rounded-md",
   sm: "h-9 px-3.5 text-sm gap-1.5",
   md: "h-11 px-5 text-sm gap-2",
   lg: "h-12 px-6 text-base gap-2",

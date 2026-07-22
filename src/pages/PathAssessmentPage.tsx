@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { KnowledgeCheck } from "@/components/education/KnowledgeCheck";
-import { getPathAssessment } from "@/data/lessons";
+import { getLessonsByPath, getPathAssessment } from "@/data/lessons";
 import { learningPaths } from "@/data/learningPaths";
 import { useLessonProgress } from "@/context/LessonProgressContext";
 import { paths } from "@/routes/paths";
@@ -16,9 +16,15 @@ export default function PathAssessmentPage() {
   const { pathId } = useParams();
   const path = learningPaths.find((p) => p.id === pathId);
   const assessment = pathId ? getPathAssessment(pathId) : undefined;
-  const { completePathAssessment, isPathCompleted } = useLessonProgress();
+  const {
+    completePathAssessment,
+    isPathCompleted,
+    isPathUnlocked,
+    allLessonsCompletedForPath,
+    isCompleted,
+  } = useLessonProgress();
 
-  if (!path || !assessment) {
+  if (!path || !assessment || !pathId) {
     return (
       <PageContainer className="py-16">
         <EmptyState
@@ -30,7 +36,49 @@ export default function PathAssessmentPage() {
     );
   }
 
+  const locked = !isPathUnlocked(pathId);
+  const allLessonsDone = allLessonsCompletedForPath(pathId);
+  const pathLessons = getLessonsByPath(pathId);
+  const incompleteLessons = pathLessons.filter((l) => !isCompleted(l.id));
   const done = isPathCompleted(path.id);
+
+  if (locked) {
+    const prereq = learningPaths.find((p) => p.id === path.prerequisitePathId);
+    return (
+      <PageContainer className="py-16">
+        <EmptyState
+          title="Assessment locked"
+          description={`Pass the final assessment for ${prereq?.title ?? "the prerequisite path"} before taking this assessment.`}
+          action={
+            <Button to={prereq ? `${paths.lessons}/${prereq.id}` : paths.lessons}>
+              Go to prerequisite
+            </Button>
+          }
+        />
+      </PageContainer>
+    );
+  }
+
+  if (!allLessonsDone) {
+    const nextIncomplete = incompleteLessons[0];
+    return (
+      <PageContainer className="py-16">
+        <EmptyState
+          title="Complete all lessons first"
+          description={`You must finish all ${pathLessons.length} lessons in ${path.title} before taking the final assessment. ${incompleteLessons.length} lesson${incompleteLessons.length === 1 ? "" : "s"} remaining.`}
+          action={
+            nextIncomplete ? (
+              <Button to={`${paths.lessons}/${pathId}/${nextIncomplete.id}`}>
+                Continue learning
+              </Button>
+            ) : (
+              <Button to={`${paths.lessons}/${pathId}`}>Back to path</Button>
+            )
+          }
+        />
+      </PageContainer>
+    );
+  }
 
   return (
     <>
@@ -78,11 +126,7 @@ function AssessmentContent({
 
   return (
     <div className="max-w-2xl">
-      <KnowledgeCheck
-        questions={assessment.questions}
-        onPass={onPass}
-        alreadyPassed={false}
-      />
+      <KnowledgeCheck questions={assessment.questions} onPass={onPass} alreadyPassed={false} />
     </div>
   );
 }

@@ -498,9 +498,85 @@ export const socLessons = [
   }),
 
   createLesson({
-    id: "soc-threat-intelligence",
+    id: "soc-incident-documentation",
     pathId: PATH,
     order: 8,
+    title: "Incident Documentation",
+    summary:
+      "Write clear, timestamped incident notes that support containment decisions, legal review, and post-incident improvement.",
+    objectives: [
+      "Document incidents with summary, timeline, scope, IOCs, and actions taken",
+      "Use UTC timestamps and separate facts from assumptions",
+      "Produce handoff-ready notes for Tier 2, IR leads, and legal stakeholders",
+    ],
+    introduction:
+      "Detection without documentation creates chaos during handoffs. SOC analysts must write notes that another analyst — or a lawyer reviewing a breach six months later — can understand. Good incident documentation answers: what happened, when, what we know for certain, what we did, and what happens next. It is not creative writing; it is evidence.",
+    coreConcepts: [
+      "Every entry needs UTC timestamps and the source of the information (alert ID, log line, user report).",
+      "Separate observations (failed logins from IP X) from conclusions (likely brute force) from actions (blocked IP).",
+      "Scope lists affected users, hosts, and data; update it as investigation expands or contracts.",
+      "IOCs (IPs, hashes, domains) belong in structured fields so they can be exported to block lists and threat intel.",
+      "Next steps and open questions prevent incidents from stalling when shifts change.",
+    ],
+    explanation:
+      "When you open a ticket from a SIEM alert, paste the alert name, rule ID, and key fields first — do not paraphrase from memory. Build a timeline in UTC: 02:14 alert fired, 02:18 analyst confirmed 47 failed SSH attempts in auth.log, 02:22 one successful login from same IP, 02:25 host isolated. Note who performed each action (analyst handle, not just 'we'). If you are unsure whether data was exfiltrated, write 'No evidence of exfiltration observed yet' rather than 'No exfiltration occurred.' Legal and insurance reviewers depend on precise language.\n\nHandoffs fail when Tier 1 closes tickets with 'resolved' and no body text. Minimum viable documentation includes: executive summary (two sentences), affected assets, IOCs, containment status, and recommended next tier actions. Screenshots and log excerpts attach as evidence; the ticket narrative ties them together. After closure, lessons learned feed detection tuning — if you cannot document it, you cannot improve it.",
+    realWorld:
+      "Regulatory investigations and cyber insurance claims request incident timelines with supporting logs. Poor documentation delayed Equifax and many ransomware responses because teams could not prove when attackers first accessed systems or what was touched.",
+    scenario:
+      "You confirm brute-force SSH from 203.0.113.44 followed by a successful login to prod-web-01. Write the first three timeline entries and list two IOCs you would add to the ticket before escalating to Tier 2.",
+    practical: [
+      {
+        kind: "code",
+        title: "Incident note template",
+        content:
+          "INCIDENT: SSH brute force + success\nUTC 2026-03-15T02:14Z — SIEM alert BRUTE-SSH-001 fired (47 failures / 10m, src 203.0.113.44)\nUTC 2026-03-15T02:18Z — Verified in auth.log: Failed password for student x47\nUTC 2026-03-15T02:22Z — Accepted publickey for student from 203.0.113.44\nIOCs: 203.0.113.44 | student account | host prod-web-01\nActions: Escalated Tier 2; recommend credential reset + host isolation",
+      },
+    ],
+    terms: [
+      { term: "UTC", definition: "Coordinated Universal Time — standard for incident timelines across time zones." },
+      { term: "Scope", definition: "Boundaries of the incident — which systems, accounts, and data are affected or under investigation." },
+      { term: "Handoff", definition: "Transfer of an open incident between analysts, tiers, or shifts with written context." },
+    ],
+    mistakes: [
+      "Writing conclusions as facts ('attacker was nation-state') without evidence.",
+      "Using local time without time zone, causing timeline errors across regions.",
+      "Closing tickets with no narrative — the next shift repeats the same work.",
+    ],
+    defensive: [
+      "Use ticket templates with required fields: summary, timeline, IOCs, actions, next steps.",
+      "Attach log excerpts with line numbers or SIEM search links.",
+      "Review documentation quality in post-incident reviews, not just technical outcomes.",
+    ],
+    quiz: [
+      mcQuiz(
+        "soc-doc-q1",
+        "Incident timelines should primarily use:",
+        ["Analyst local time without time zone", "UTC timestamps", "Fiscal quarter labels", "Random approximate times"],
+        1,
+        "UTC avoids ambiguity when teams span regions.",
+      ),
+      tfQuiz(
+        "soc-doc-q2",
+        "It is acceptable to document assumptions separately from confirmed observations.",
+        true,
+        "Clear separation prevents conclusions from being treated as proven facts.",
+      ),
+      mcQuiz(
+        "soc-doc-q3",
+        "Which belongs in structured IOC fields?",
+        ["Office lunch orders", "Attacker IP addresses and file hashes", "Employee birthdays", "Desk locations"],
+        1,
+        "IOCs are machine-readable indicators used for blocking and hunting.",
+      ),
+    ],
+    conclusion:
+      "You can draft a defensible incident timeline with UTC timestamps, separate facts from assumptions, and hand off work without losing context.",
+  }),
+
+  createLesson({
+    id: "soc-threat-intelligence",
+    pathId: PATH,
+    order: 9,
     title: "Threat Intelligence",
     summary:
       "Strategic, operational, and tactical intel — sources, fusion, and applying intelligence to SOC decisions.",

@@ -21,7 +21,7 @@ export const networkingLessons = [
       "Explain why layered models help troubleshoot and secure networks",
     ],
     introduction:
-      "The Open Systems Interconnection (OSI) model is a conceptual framework for understanding network communication. No single product implements OSI literally, but the model gives security practitioners a shared vocabulary: when an incident involves DNS, you are at Layer 7; when packets never arrive, you descend to Layer 3 or below. Attackers and defenders both reason in layers — encryption protects confidentiality at Layer 6, firewalls filter at Layers 3–4, and phishing abuses Layer 7 trust.",
+      "The Open Systems Interconnection (OSI) model is a conceptual framework for understanding network communication. Think of it as **seven labeled layers** that describe what happens from the moment an application sends data until bits leave the network cable or Wi‑Fi antenna — and back again on the receiving side.\n\nIf networking is new to you: you do not need to memorize every protocol on day one. Start by knowing **which layer answers which question** — \"Can I reach the host?\" (Layer 3), \"Is anything listening on the port?\" (Layer 4), \"Does the web app respond?\" (Layer 7). The terminal lab lets you practice that bottom-up troubleshooting with `ping`, `ip`, and `ss`.",
     coreConcepts: [
       "Layer 7 (Application): HTTP, DNS, SMTP — what users and applications interact with directly.",
       "Layer 6 (Presentation): encoding, encryption, compression — TLS often discussed here or at Layer 5.",
@@ -36,7 +36,7 @@ export const networkingLessons = [
     realWorld:
       "SOC analysts classify alerts by layer. A SYN flood is a Layer 4 availability attack. ARP spoofing is Layer 2. Malicious DNS responses abuse Layer 7 trust in name resolution. Penetration testers document findings by layer so network and application teams know who owns remediation.",
     scenario:
-      "Users report that internal websites load but external HTTPS sites time out. Ping to 8.8.8.8 succeeds. DNS resolves correctly. At which OSI layers would you investigate next, and why?",
+      "Users report that internal websites load but external HTTPS sites time out. Ping to 8.8.8.8 succeeds. DNS resolves correctly. At which OSI layers would you investigate next, and why?\n\nIn the terminal lab, start at Layer 3 (loopback ping, interface addresses) before jumping to application-layer conclusions.",
     practical: [
       {
         kind: "diagram",
@@ -82,6 +82,8 @@ export const networkingLessons = [
         "Layered vocabulary is standard in incident response, architecture, and certification exams.",
       ),
     ],
+    conclusion:
+      "You can name the seven OSI layers, match common protocols to layers, and troubleshoot connectivity from the bottom up — the same order you practice in the terminal lab.",
   }),
 
   createLesson({
@@ -111,7 +113,15 @@ export const networkingLessons = [
     realWorld:
       "Cloud security groups are stateful Transport/Internet filters. Kubernetes NetworkPolicies reference IP and port. EDR tools hook application APIs while NDR appliances inspect packets — all TCP/IP concepts.",
     scenario:
-      "A host can SSH to an internal server by IP but not by hostname. Which TCP/IP layer is most likely misconfigured, and what protocol would you verify?",
+      "A host can SSH to an internal server by IP but not by hostname. Which TCP/IP layer is most likely misconfigured, and what protocol would you verify?\n\nUse the terminal lab to confirm IP connectivity before testing DNS with `dig` or `host`.",
+    practical: [
+      {
+        kind: "code",
+        title: "Layer check workflow",
+        content:
+          "ping -c 2 10.0.0.5          # Internet layer reachable?\nss -tulpn                     # Transport listeners\ndig internal-server.corp.local # Application name resolution",
+      },
+    ],
     terms: [
       { term: "Internet layer", definition: "TCP/IP layer containing IP — provides best-effort datagram delivery across networks." },
       { term: "Stack", definition: "The set of protocols implemented on a host from link through application." },
@@ -149,6 +159,8 @@ export const networkingLessons = [
         "TCP/IP collapses session, presentation, and application into one layer.",
       ),
     ],
+    conclusion:
+      "You can map real tools (ping, ip, ss, curl) to TCP/IP layers and explain why SSH-by-IP-but-not-hostname points to a name-resolution problem.",
   }),
 
   createLesson({
@@ -178,7 +190,7 @@ export const networkingLessons = [
     realWorld:
       "Ransomware lateral movement is tracked via internal IP logs. Geo-IP blocking uses public address attribution. Cloud elastic IPs rotate with infrastructure — tagging resources by ID rather than IP alone prevents stale firewall rules.",
     scenario:
-      "Firewall logs show inbound TCP connections sourced from 10.0.0.50 on the internet-facing interface. Why is this suspicious, and what control should have dropped it?",
+      "Firewall logs show inbound TCP connections sourced from 10.0.0.50 on the internet-facing interface. Why is this suspicious, and what control should have dropped it?\n\nThe terminal lab reinforces loopback, interface, and listener checks before you interpret firewall alerts.",
     terms: [
       { term: "CIDR", definition: "Classless Inter-Domain Routing notation — IP prefix and mask length, e.g. 10.0.0.0/8." },
       { term: "RFC 1918", definition: "Defines private IPv4 ranges: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16." },

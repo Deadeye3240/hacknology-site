@@ -1,17 +1,13 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { PageContainer } from "@/components/layout/PageContainer";
-import { Card } from "@/components/ui/Card";
-import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 import { Modal } from "@/components/ui/Modal";
-import { Avatar } from "@/components/ui/Avatar";
 import { TextField, TextAreaField } from "@/components/ui/TextField";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { LockIcon } from "@/components/ui/icons";
+import { CommunityShell } from "@/components/forum/CommunityShell";
+import { ForumPost, ForumReply, PostAction } from "@/components/forum/ForumPost";
 import { api, ApiError } from "@/lib/api";
-import { formatDate, timeAgo } from "@/lib/date";
 import { useAuth } from "@/context/AuthContext";
 import { paths } from "@/routes/paths";
 import type { DiscussionDetail, ReplyItem } from "@/types/forum";
@@ -21,11 +17,6 @@ type Action =
   | { kind: "delete-reply"; id: string }
   | { kind: "lock"; locked: boolean }
   | { kind: "report"; targetType: "discussion" | "reply"; targetId: string };
-
-function RoleTag({ role }: { role: string }) {
-  if (role === "user") return null;
-  return <Badge variant="accent" className="capitalize">{role}</Badge>;
-}
 
 export default function DiscussionPage() {
   const { postId } = useParams();
@@ -154,238 +145,192 @@ export default function DiscussionPage() {
 
   if (status === "loading") {
     return (
-      <PageContainer className="py-20">
-        <div className="flex items-center justify-center">
-          <span className="h-8 w-8 animate-spin rounded-full border-2 border-white/10 border-t-accent-400" />
+      <CommunityShell title="Loading…">
+        <div className="flex min-h-[40vh] items-center justify-center">
+          <span className="h-6 w-6 animate-spin rounded-full border-2 border-white/10 border-t-accent-400" />
         </div>
-      </PageContainer>
+      </CommunityShell>
     );
   }
 
   if (status === "notfound" || !detail) {
     return (
-      <PageContainer className="py-16">
+      <CommunityShell title="Not found" breadcrumb={[{ label: "Discussion" }]}>
         <EmptyState
           title="Discussion not found"
           description="This discussion may have been removed or never existed."
-          action={<Button to={paths.forum}>Back to forum</Button>}
+          action={
+            <Button to={paths.forum} size="sm">
+              Back to community
+            </Button>
+          }
         />
-      </PageContainer>
+      </CommunityShell>
     );
   }
 
-  return (
-    <PageContainer className="py-10">
-      <div className="mx-auto flex max-w-3xl flex-col gap-6">
-        <Button to={paths.forum} variant="ghost" size="sm" className="self-start px-2">
-          ← Back to forum
-        </Button>
+  const postActions = (
+    <>
+      {detail.canEdit && <PostAction onClick={startEditDiscussion}>Edit</PostAction>}
+      {detail.canDelete && (
+        <PostAction danger onClick={() => setAction({ kind: "delete-discussion" })}>
+          Delete
+        </PostAction>
+      )}
+      {detail.canModerate && (
+        <PostAction onClick={() => setAction({ kind: "lock", locked: !detail.locked })}>
+          {detail.locked ? "Unlock" : "Lock"}
+        </PostAction>
+      )}
+      {isAuthenticated && (
+        <PostAction
+          onClick={() => setAction({ kind: "report", targetType: "discussion", targetId: detail.id })}
+        >
+          Report
+        </PostAction>
+      )}
+    </>
+  );
 
+  return (
+    <CommunityShell breadcrumb={[{ label: detail.categoryName }]}>
+      <div className="mx-auto flex max-w-3xl flex-col gap-2.5">
         {pageError && <Alert variant="error">{pageError}</Alert>}
         {notice && <Alert variant="success">{notice}</Alert>}
 
-        {/* Discussion */}
-        <Card className="flex flex-col gap-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="neutral">{detail.categoryName}</Badge>
-            {detail.locked && (
-              <Badge variant="warning">
-                <LockIcon className="text-xs" /> Locked
-              </Badge>
-            )}
-          </div>
-
-          {editingDiscussion ? (
-            <form onSubmit={saveDiscussion} className="flex flex-col gap-3">
-              {actionError && <Alert variant="error">{actionError}</Alert>}
-              <TextField
-                label="Title"
-                value={editTitle}
-                onChange={(e) => setEditTitle(e.target.value)}
-                maxLength={140}
-              />
-              <TextAreaField
-                label="Content"
-                value={editContent}
-                onChange={(e) => setEditContent(e.target.value)}
-                maxLength={10000}
-              />
-              <div className="flex justify-end gap-2">
-                <Button type="button" variant="ghost" onClick={() => setEditingDiscussion(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit">Save</Button>
-              </div>
-            </form>
-          ) : (
-            <>
-              <h1 className="text-2xl font-bold text-white">{detail.title}</h1>
-              <div className="flex items-center gap-3">
-                <Avatar
-                  name={detail.author?.displayName ?? "Unknown"}
-                  avatar={detail.author?.avatar}
-                  size="md"
+        <ForumPost
+          isOriginalPost
+          author={{
+            displayName: detail.author?.displayName ?? "Unknown",
+            avatar: detail.author?.avatar,
+            role: detail.author?.role,
+          }}
+          createdAt={detail.createdAt}
+          title={editingDiscussion ? undefined : detail.title}
+          categoryName={detail.categoryName}
+          locked={detail.locked}
+          content={detail.content}
+          actions={!editingDiscussion ? postActions : undefined}
+          editing={
+            editingDiscussion ? (
+              <form onSubmit={saveDiscussion} className="flex flex-col gap-3">
+                {actionError && <Alert variant="error">{actionError}</Alert>}
+                <TextField
+                  label="Title"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  maxLength={140}
                 />
-                <div className="flex flex-wrap items-center gap-2 text-sm text-slate-400">
-                  <span className="font-medium text-slate-200">
-                    {detail.author?.displayName ?? "Unknown"}
-                  </span>
-                  {detail.author && <RoleTag role={detail.author.role} />}
-                  <span aria-hidden>·</span>
-                  <span>{formatDate(detail.createdAt)}</span>
+                <TextAreaField
+                  label="Content"
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.target.value)}
+                  maxLength={10000}
+                />
+                <div className="flex justify-end gap-2">
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setEditingDiscussion(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" size="sm">
+                    Save
+                  </Button>
                 </div>
-              </div>
-              <p className="whitespace-pre-wrap text-pretty leading-relaxed text-slate-300">
-                {detail.content}
-              </p>
-              <div className="flex flex-wrap gap-2 border-t border-white/5 pt-4">
-                {detail.canEdit && (
-                  <Button variant="secondary" size="sm" onClick={startEditDiscussion}>
-                    Edit
-                  </Button>
-                )}
-                {detail.canDelete && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setAction({ kind: "delete-discussion" })}
-                  >
-                    Delete
-                  </Button>
-                )}
-                {detail.canModerate && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setAction({ kind: "lock", locked: !detail.locked })}
-                  >
-                    {detail.locked ? "Unlock" : "Lock"}
-                  </Button>
-                )}
-                {isAuthenticated && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() =>
-                      setAction({ kind: "report", targetType: "discussion", targetId: detail.id })
-                    }
-                  >
-                    Report
-                  </Button>
-                )}
-              </div>
-            </>
-          )}
-        </Card>
+              </form>
+            ) : undefined
+          }
+        />
 
-        {/* Replies */}
-        <div className="flex flex-col gap-3">
-          <h2 className="text-lg font-semibold text-white">
+        <section aria-labelledby="replies-heading">
+          <h2 id="replies-heading" className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-600">
             {replies.length} {replies.length === 1 ? "reply" : "replies"}
           </h2>
-          {replies.map((reply) => (
-            <Card key={reply.id} className="flex gap-3 p-5">
-              <Avatar
-                name={reply.author.displayName}
-                avatar={reply.author.avatar}
-                size="sm"
-                className="mt-0.5"
-              />
-              <div className="flex min-w-0 flex-1 flex-col gap-3">
-              <div className="flex flex-wrap items-center gap-2 text-sm text-slate-400">
-                <span className="font-medium text-slate-200">{reply.author.displayName}</span>
-                <RoleTag role={reply.author.role} />
-                <span aria-hidden>·</span>
-                <span>{timeAgo(reply.createdAt)}</span>
-              </div>
-
-              {reply.removed ? (
-                <p className="text-sm italic text-slate-500">[removed by a moderator]</p>
-              ) : editingReplyId === reply.id ? (
-                <div className="flex flex-col gap-2">
-                  <TextAreaField
-                    label="Edit reply"
-                    value={editReplyContent}
-                    onChange={(e) => setEditReplyContent(e.target.value)}
-                    maxLength={10000}
-                  />
-                  <div className="flex justify-end gap-2">
-                    <Button variant="ghost" size="sm" onClick={() => setEditingReplyId(null)}>
-                      Cancel
-                    </Button>
-                    <Button size="sm" onClick={() => saveReply(reply.id)}>
-                      Save
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <p className="whitespace-pre-wrap text-pretty leading-relaxed text-slate-300">
-                    {reply.content}
-                  </p>
-                  <div className="flex flex-wrap gap-2">
+          <div className="flex flex-col gap-1.5">
+            {replies.map((reply) => (
+              <ForumReply
+                key={reply.id}
+                author={{
+                  displayName: reply.author.displayName,
+                  avatar: reply.author.avatar,
+                  role: reply.author.role,
+                }}
+                createdAt={reply.createdAt}
+                content={reply.content}
+                removed={reply.removed}
+                editing={
+                  editingReplyId === reply.id ? (
+                    <div className="flex flex-col gap-2">
+                      <TextAreaField
+                        label="Edit reply"
+                        value={editReplyContent}
+                        onChange={(e) => setEditReplyContent(e.target.value)}
+                        maxLength={10000}
+                      />
+                      <div className="flex justify-end gap-2">
+                        <Button variant="ghost" size="sm" onClick={() => setEditingReplyId(null)}>
+                          Cancel
+                        </Button>
+                        <Button size="sm" onClick={() => saveReply(reply.id)}>
+                          Save
+                        </Button>
+                      </div>
+                    </div>
+                  ) : undefined
+                }
+                actions={
+                  <>
                     {reply.canEdit && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
+                      <PostAction
                         onClick={() => {
                           setEditingReplyId(reply.id);
                           setEditReplyContent(reply.content);
                         }}
                       >
                         Edit
-                      </Button>
+                      </PostAction>
                     )}
                     {reply.canDelete && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setAction({ kind: "delete-reply", id: reply.id })}
-                      >
+                      <PostAction danger onClick={() => setAction({ kind: "delete-reply", id: reply.id })}>
                         Delete
-                      </Button>
+                      </PostAction>
                     )}
                     {isAuthenticated && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
+                      <PostAction
                         onClick={() =>
                           setAction({ kind: "report", targetType: "reply", targetId: reply.id })
                         }
                       >
                         Report
-                      </Button>
+                      </PostAction>
                     )}
-                  </div>
-                </>
-              )}
-              </div>
-            </Card>
-          ))}
-        </div>
+                  </>
+                }
+              />
+            ))}
+          </div>
+        </section>
 
-        {/* Reply composer */}
         {detail.locked ? (
           <Alert variant="info">This discussion is locked. New replies are disabled.</Alert>
         ) : isAuthenticated ? (
-          <Card>
-            <form onSubmit={submitReply} className="flex flex-col gap-3">
+          <div className="rounded-md border border-white/[0.06] bg-white/[0.01] p-2.5">
+            <form onSubmit={submitReply} className="flex flex-col gap-2">
               {replyError && <Alert variant="error">{replyError}</Alert>}
               <TextAreaField
-                label="Add a reply"
+                label="Write a reply"
                 value={replyContent}
                 onChange={(e) => setReplyContent(e.target.value)}
-                placeholder="Share your thoughts…"
+                placeholder="Share your insight. Use ``` for code blocks."
                 maxLength={10000}
                 required
               />
-              <div className="flex justify-end">
-                <Button type="submit" disabled={posting}>
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[10px] text-slate-600">Plain text · ``` fences for code</p>
+                <Button type="submit" size="xs" disabled={posting}>
                   {posting ? "Posting…" : "Post reply"}
                 </Button>
               </div>
             </form>
-          </Card>
+          </div>
         ) : (
           <Alert variant="info">
             <Button to={paths.login} variant="ghost" size="sm" className="px-1">
@@ -396,7 +341,6 @@ export default function DiscussionPage() {
         )}
       </div>
 
-      {/* Action modals */}
       <Modal
         open={action !== null && action.kind !== "report"}
         onClose={() => setAction(null)}
@@ -409,16 +353,20 @@ export default function DiscussionPage() {
         }
         footer={
           <>
-            <Button variant="ghost" onClick={() => setAction(null)} disabled={actionBusy}>
+            <Button variant="ghost" size="sm" onClick={() => setAction(null)} disabled={actionBusy}>
               Cancel
             </Button>
-            <Button onClick={runAction} disabled={actionBusy}>
+            <Button size="sm" onClick={runAction} disabled={actionBusy}>
               {actionBusy ? "Working…" : "Confirm"}
             </Button>
           </>
         }
       >
-        {actionError && <Alert variant="error" className="mb-3">{actionError}</Alert>}
+        {actionError && (
+          <Alert variant="error" className="mb-3">
+            {actionError}
+          </Alert>
+        )}
         {action?.kind === "lock"
           ? action.locked
             ? "Members will no longer be able to reply."
@@ -437,6 +385,7 @@ export default function DiscussionPage() {
           <>
             <Button
               variant="ghost"
+              size="sm"
               onClick={() => {
                 setAction(null);
                 setReportReason("");
@@ -445,13 +394,17 @@ export default function DiscussionPage() {
             >
               Cancel
             </Button>
-            <Button onClick={runAction} disabled={actionBusy || reportReason.trim().length === 0}>
+            <Button size="sm" onClick={runAction} disabled={actionBusy || reportReason.trim().length === 0}>
               {actionBusy ? "Submitting…" : "Submit report"}
             </Button>
           </>
         }
       >
-        {actionError && <Alert variant="error" className="mb-3">{actionError}</Alert>}
+        {actionError && (
+          <Alert variant="error" className="mb-3">
+            {actionError}
+          </Alert>
+        )}
         <TextAreaField
           label="Why are you reporting this?"
           value={reportReason}
@@ -460,6 +413,6 @@ export default function DiscussionPage() {
           maxLength={500}
         />
       </Modal>
-    </PageContainer>
+    </CommunityShell>
   );
 }

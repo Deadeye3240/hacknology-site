@@ -9,7 +9,7 @@ import {
 } from "react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
-import { getLessonsByPath, getPathAssessment } from "@/data/lessons";
+import { getLessonById, getLessonsByPath, getPathAssessment } from "@/data/lessons";
 import { learningPathMeta } from "@/data/lessons/learningPathMeta";
 import type { LessonProgressRecord, PathCompletionRecord } from "@/types/education";
 
@@ -36,9 +36,26 @@ interface LessonProgressContextValue {
   totalXp: number;
   pathProgressPercent: (pathId: string) => number;
   recommendedNextLesson: (pathId: string) => string | undefined;
+  allLessonsCompletedForPath: (pathId: string) => boolean;
+  assessmentPendingForPath: (pathId: string) => boolean;
 }
 
 const LessonProgressContext = createContext<LessonProgressContextValue | null>(null);
+
+function computeTotalXp(
+  lessons: Record<string, LessonProgressRecord>,
+  paths: Record<string, PathCompletionRecord>,
+): number {
+  let xp = 0;
+  for (const rec of Object.values(lessons)) {
+    if (rec.quizPassed) xp += XP_PER_LESSON;
+  }
+  for (const pathId of Object.keys(paths)) {
+    const assessment = getPathAssessment(pathId);
+    if (assessment) xp += assessment.xpReward;
+  }
+  return xp;
+}
 
 function readState(): LessonProgressState {
   if (typeof window === "undefined") {
@@ -48,10 +65,12 @@ function readState(): LessonProgressState {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as LessonProgressState;
+      const lessons = parsed.lessons ?? {};
+      const paths = parsed.paths ?? {};
       return {
-        lessons: parsed.lessons ?? {},
-        paths: parsed.paths ?? {},
-        xp: parsed.xp ?? 0,
+        lessons,
+        paths,
+        xp: parsed.xp ?? computeTotalXp(lessons, paths),
       };
     }
     const legacy = window.localStorage.getItem("hacknology.lesson-progress.v1");
@@ -68,7 +87,7 @@ function readState(): LessonProgressState {
           };
         }
       }
-      return { lessons, paths: {}, xp: Object.keys(lessons).length * XP_PER_LESSON };
+      return { lessons, paths: {}, xp: computeTotalXp(lessons, {}) };
     }
   } catch {
     /* ignore */
@@ -90,22 +109,43 @@ export function LessonProgressProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!isAuthenticated) return;
-    api
-      .get<{ lessons: { lessonId: string; completed: boolean }[] }>("/progress/lessons")
-      .then((res) => {
+    Promise.all([
+      api.get<{ lessons: { lessonId: string; completed: boolean; completedAt?: string | null }[] }>(
+        "/progress/lessons",
+      ),
+      api.get<{ paths: { pathId: string; assessmentScore: number | null; completedAt: string }[] }>(
+        "/progress/paths",
+      ),
+    ])
+      .then(([lessonsRes, pathsRes]) => {
         setState((prev) => {
           const lessons = { ...prev.lessons };
-          for (const row of res.lessons) {
-            if (row.completed && !lessons[row.lessonId]) {
+          for (const row of lessonsRes.lessons) {
+            if (row.completed && !lessons[row.lessonId]?.quizPassed) {
               lessons[row.lessonId] = {
-                completedAt: new Date().toISOString(),
+                completedAt: row.completedAt ?? new Date().toISOString(),
                 quizScore: 0,
                 quizTotal: 0,
                 quizPassed: true,
               };
             }
           }
-          return { ...prev, lessons };
+
+          const paths = { ...prev.paths };
+          for (const row of pathsRes.paths) {
+            if (!paths[row.pathId]) {
+              paths[row.pathId] = {
+                completedAt: row.completedAt,
+                assessmentScore: row.assessmentScore ?? 0,
+              };
+            }
+          }
+
+          return {
+            lessons,
+            paths,
+            xp: computeTotalXp(lessons, paths),
+          };
         });
       })
       .catch(() => {});
@@ -136,10 +176,26 @@ export function LessonProgressProvider({ children }: { children: ReactNode }) {
       const pathLessons = getLessonsByPath(pathId);
       const index = pathLessons.findIndex((l) => l.id === lessonId);
       if (index <= 0) return true;
-      const prev = pathLessons[index - 1];
-      return isCompleted(prev.id);
+      for (let i = 0; i < index; i++) {
+        if (!isCompleted(pathLessons[i].id)) return false;
+      }
+      return true;
     },
     [isPathUnlocked, isCompleted],
+  );
+
+  const allLessonsCompletedForPath = useCallback(
+    (pathId: string) => {
+      const pathLessons = getLessonsByPath(pathId);
+      if (pathLessons.length === 0) return false;
+      return pathLessons.every((l) => isCompleted(l.id));
+    },
+    [isCompleted],
+  );
+
+  const assessmentPendingForPath = useCallback(
+    (pathId: string) => allLessonsCompletedForPath(pathId) && !isPathCompleted(pathId),
+    [allLessonsCompletedForPath, isPathCompleted],
   );
 
   const completeLessonWithQuiz = useCallback(
@@ -149,7 +205,6 @@ export function LessonProgressProvider({ children }: { children: ReactNode }) {
 
       setState((prev) => {
         if (prev.lessons[lessonId]?.quizPassed) return prev;
-        const xpGain = XP_PER_LESSON;
         const lessons = {
           ...prev.lessons,
           [lessonId]: {
@@ -162,7 +217,7 @@ export function LessonProgressProvider({ children }: { children: ReactNode }) {
         if (isAuthenticated) {
           void api.post("/progress/lessons", { lessonId, completed: true }).catch(() => {});
         }
-        return { ...prev, lessons, xp: prev.xp + xpGain };
+        return { ...prev, lessons, xp: computeTotalXp(lessons, prev.paths) };
       });
     },
     [isAuthenticated],
@@ -177,29 +232,53 @@ export function LessonProgressProvider({ children }: { children: ReactNode }) {
 
       setState((prev) => {
         if (prev.paths[pathId]) return prev;
-        return {
-          ...prev,
-          paths: {
-            ...prev.paths,
-            [pathId]: { completedAt: new Date().toISOString(), assessmentScore: score },
-          },
-          xp: prev.xp + assessment.xpReward,
+        const paths = {
+          ...prev.paths,
+          [pathId]: { completedAt: new Date().toISOString(), assessmentScore: score },
         };
+        if (isAuthenticated) {
+          void api
+            .post("/progress/paths", { pathId, completed: true, assessmentScore: score })
+            .catch(() => {});
+        }
+        return { ...prev, paths, xp: computeTotalXp(prev.lessons, paths) };
       });
     },
-    [],
+    [isAuthenticated],
   );
 
   const resetLesson = useCallback(
     (lessonId: string) => {
+      const lesson = getLessonById(lessonId);
+      if (!lesson) return;
+
       setState((prev) => {
         if (!prev.lessons[lessonId]) return prev;
+
+        const pathLessons = getLessonsByPath(lesson.pathId);
+        const index = pathLessons.findIndex((l) => l.id === lessonId);
+        if (index < 0) return prev;
+
         const lessons = { ...prev.lessons };
-        delete lessons[lessonId];
-        if (isAuthenticated) {
-          void api.post("/progress/lessons", { lessonId, completed: false }).catch(() => {});
+        const toClear = pathLessons.slice(index);
+        for (const l of toClear) {
+          if (lessons[l.id]) {
+            delete lessons[l.id];
+            if (isAuthenticated) {
+              void api.post("/progress/lessons", { lessonId: l.id, completed: false }).catch(() => {});
+            }
+          }
         }
-        return { ...prev, lessons, xp: Math.max(0, prev.xp - XP_PER_LESSON) };
+
+        const paths = { ...prev.paths };
+        if (paths[lesson.pathId]) {
+          delete paths[lesson.pathId];
+          if (isAuthenticated) {
+            void api.post("/progress/paths", { pathId: lesson.pathId, completed: false }).catch(() => {});
+          }
+        }
+
+        return { lessons, paths, xp: computeTotalXp(lessons, paths) };
       });
     },
     [isAuthenticated],
@@ -238,6 +317,8 @@ export function LessonProgressProvider({ children }: { children: ReactNode }) {
       totalXp: state.xp,
       pathProgressPercent,
       recommendedNextLesson,
+      allLessonsCompletedForPath,
+      assessmentPendingForPath,
     }),
     [
       isCompleted,
@@ -250,6 +331,8 @@ export function LessonProgressProvider({ children }: { children: ReactNode }) {
       state,
       pathProgressPercent,
       recommendedNextLesson,
+      allLessonsCompletedForPath,
+      assessmentPendingForPath,
     ],
   );
 

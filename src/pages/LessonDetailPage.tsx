@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ListChecksIcon } from "@/components/ui/icons";
 import { KnowledgeCheck } from "@/components/education/KnowledgeCheck";
 import { LessonExampleBlock } from "@/components/education/LessonExampleBlock";
+import { LessonTerminalLab } from "@/components/education/LessonTerminalLab";
 import { getLessonById, getLessonsByPath } from "@/data/lessons";
 import { learningPaths } from "@/data/learningPaths";
 import { useLessonProgress } from "@/context/LessonProgressContext";
@@ -120,6 +121,17 @@ function LessonContent({
         </ul>
       </Card>
 
+      <Card className="flex flex-col gap-2 border-accent-400/15 bg-accent-400/[0.03]">
+        <h2 className="text-lg font-semibold text-white">Scenario</h2>
+        <p className="text-sm leading-relaxed text-slate-300">{lesson.scenario}</p>
+        <p className="text-xs text-slate-500">
+          Use the hands-on terminal below to practice the skills this scenario requires — then read the
+          detailed explanation to connect output to concepts.
+        </p>
+      </Card>
+
+      <LessonTerminalLab lesson={lesson} />
+
       <Card className="flex flex-col gap-2">
         <h2 className="text-lg font-semibold text-white">Detailed explanation</h2>
         {lesson.detailedExplanation.split("\n\n").map((para) => (
@@ -134,14 +146,12 @@ function LessonContent({
         <p className="text-sm leading-relaxed text-slate-300">{lesson.realWorldExample}</p>
       </Card>
 
-      <Card className="flex flex-col gap-2 border-accent-400/15 bg-accent-400/[0.03]">
-        <h2 className="text-lg font-semibold text-white">Cybersecurity scenario</h2>
-        <p className="text-sm leading-relaxed text-slate-300">{lesson.scenario}</p>
-      </Card>
-
       {lesson.practicalExamples.length > 0 && (
         <div className="flex flex-col gap-3">
-          <h2 className="text-base font-semibold text-white">Practical examples</h2>
+          <h2 className="text-base font-semibold text-white">Reference examples</h2>
+          <p className="text-xs text-slate-500">
+            These examples supplement the terminal lab — compare them to what you observed in the simulated shell.
+          </p>
           {lesson.practicalExamples.map((ex) => (
             <LessonExampleBlock key={ex.title ?? ex.content.slice(0, 30)} example={ex} />
           ))}

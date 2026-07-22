@@ -19,6 +19,7 @@ export default function LessonsPage() {
     pathProgressPercent,
     recommendedNextLesson,
     isPathCompleted,
+    assessmentPendingForPath,
   } = useLessonProgress();
 
   const sorted = [...learningPaths].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
@@ -28,6 +29,7 @@ export default function LessonsPage() {
     return pct > 0 && pct < 100 && !isPathCompleted(p.id);
   });
   const continueLessonId = continuePath ? recommendedNextLesson(continuePath.id) : undefined;
+  const assessmentPendingPath = sorted.find((p) => assessmentPendingForPath(p.id));
 
   const beginner = sorted.filter((p) => p.level === "Beginner");
   const intermediate = sorted.filter((p) => p.level === "Intermediate");
@@ -72,6 +74,24 @@ export default function LessonsPage() {
               </div>
               <Button to={`${paths.lessons}/${continuePath.id}/${continueLessonId}`}>
                 Resume →
+              </Button>
+            </Card>
+          )}
+
+          {assessmentPendingPath && (
+            <Card className="flex flex-col gap-3 border-amber-400/25 bg-amber-400/[0.04] p-6 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-amber-300">
+                  Final assessment required
+                </p>
+                <h2 className="text-lg font-semibold text-white">{assessmentPendingPath.title}</h2>
+                <p className="text-sm text-slate-400">
+                  All lessons complete — pass the final assessment to earn certification and unlock
+                  dependent paths.
+                </p>
+              </div>
+              <Button to={`${paths.lessons}/${assessmentPendingPath.id}/assessment`}>
+                Take assessment →
               </Button>
             </Card>
           )}

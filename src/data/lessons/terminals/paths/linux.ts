@@ -1,0 +1,431 @@
+import { cmd, cwdRule, h, lab, LINUX_SCENARIO, prefix, step } from "../helpers";
+
+export const linuxTerminals = {
+  "linux-filesystem": lab(
+    "Filesystem hierarchy lab",
+    "Walk standard Linux paths and connect each location to its FHS role.",
+    LINUX_SCENARIO,
+    [
+      step(
+        "pwd",
+        "Confirm your starting directory before navigating the tree.",
+        "Analysts always anchor investigations to a known location so relative paths resolve correctly.",
+        [h("Concept", "The shell tracks your current working directory (CWD)."), h("Command", "pwd")],
+        [cmd("pwd")],
+        "Your CWD is the reference point for every relative path you type next.",
+      ),
+      step(
+        "cd-etc",
+        "Navigate to /etc — where host configuration files live.",
+        "Misconfigurations and persistence often hide in /etc; knowing how to reach it quickly matters.",
+        [h("Concept", "Absolute paths start from / and work from any CWD."), h("Command", "cd /etc")],
+        [cmd("cd /etc")],
+      ),
+      step(
+        "list-etc",
+        "List configuration files in /etc (include hidden entries with -a).",
+        "Hidden dotfiles like .ssh or shell profiles are easy to miss without -a.",
+        [h("Syntax", "ls -la shows permissions, owners, and hidden files."), h("Command", "ls -la")],
+        [cmd("ls -a"), cmd("ls -la"), cmd("ls -lah")],
+      ),
+      step(
+        "cat-passwd",
+        "Read /etc/passwd to see how user accounts are defined on the system.",
+        "Passwd entries reveal service accounts, home directories, and shells — common enumeration targets.",
+        [h("Concept", "cat sends file contents to stdout for inspection."), h("Command", "cat passwd")],
+        [cmd("cat passwd"), cmd("cat /etc/passwd")],
+        "Each line maps a username to UID, home directory, and login shell — core identity data.",
+      ),
+      step(
+        "cd-var-log",
+        "Move to /var/log where operational logs are stored.",
+        "/var holds variable data; logs here are your first stop during incident triage.",
+        [h("Concept", "Logs persist runtime events — auth, web, system."), h("Command", "cd /var/log")],
+        [cmd("cd /var/log")],
+        "You are now where defenders tail auth.log and syslog during alerts.",
+      ),
+    ],
+  ),
+
+  "linux-terminal-navigation": lab(
+    "Navigation lab",
+    "Practice moving through a simulated filesystem like you would on a real server.",
+    LINUX_SCENARIO,
+    [
+      step(
+        "pwd",
+        "Print your current working directory.",
+        "Before cd or ls, confirm where you are — typos in relative paths cause wrong-file reads.",
+        [h("Concept", "pwd = print working directory."), h("Command", "pwd")],
+        [cmd("pwd")],
+      ),
+      step(
+        "ls-hidden",
+        "List files in your home directory including hidden dotfiles.",
+        "Attackers and tools leave traces in .bashrc, .ssh, and other dotfiles.",
+        [h("Syntax", "The -a flag shows entries starting with ."), h("Command", "ls -la")],
+        [cmd("ls -a"), cmd("ls -la"), cmd("ls -lah")],
+      ),
+      step(
+        "cd-var-log",
+        "Change directory to /var/log using an absolute path.",
+        "Absolute paths work regardless of your current directory — reliable in scripts and incidents.",
+        [h("Command", "cd /var/log")],
+        [cmd("cd /var/log")],
+      ),
+      step(
+        "cat-auth",
+        "Display auth.log from your current directory.",
+        "Authentication logs show SSH successes, failures, and sudo usage — high-value evidence.",
+        [h("Concept", "cat reads a file to the terminal."), h("Command", "cat auth.log")],
+        [cmd("cat auth.log")],
+        "You found SSH events — the same workflow analysts use on compromised hosts.",
+      ),
+    ],
+  ),
+
+  "linux-files-directories": lab(
+    "Files and directories lab",
+    "Inspect file metadata and navigate between parent and child directories.",
+    LINUX_SCENARIO,
+    [
+      step(
+        "ls-long",
+        "List your home directory in long format to see permissions and sizes.",
+        "Long listings expose world-writable files and suspicious ownership — quick win during audits.",
+        [h("Syntax", "-l adds permission bits, owner, size, and date."), h("Command", "ls -l")],
+        [cmd("ls -l"), cmd("ls -la"), cmd("ls -lah")],
+      ),
+      step(
+        "cat-notes",
+        "Read notes.txt in your home directory.",
+        "Small text files often hold analyst reminders or attacker notes — always check readable files.",
+        [h("Command", "cat notes.txt")],
+        [cmd("cat notes.txt")],
+      ),
+      step(
+        "cd-up-etc",
+        "From /home/student, reach /etc using cd .. and cd (relative navigation).",
+        "Relative paths (.., .) let you move efficiently without retyping full paths.",
+        [h("Approach", "cd .. goes to parent; repeat or combine with cd etc from /home."),
+         h("Command", "cd /etc")],
+        [cmd("cd /etc"), cwdRule("/etc")],
+      ),
+      step(
+        "head-passwd",
+        "Show the first few lines of passwd to preview account structure without flooding the screen.",
+        "head limits output — essential when logs or passwd files are huge.",
+        [h("Syntax", "head shows the first 10 lines by default."), h("Command", "head passwd")],
+        [prefix("head")],
+        "You previewed account entries safely — same technique for log files.",
+      ),
+    ],
+  ),
+
+  "linux-permissions": lab(
+    "Permissions lab",
+    "Read permission bits and understand who can read, write, or execute.",
+    LINUX_SCENARIO,
+    [
+      step(
+        "ls-perms-home",
+        "List your home directory with -l to expose permission bits.",
+        "rwx bits tell you if others can read secrets or write malicious files.",
+        [h("Concept", "First character: d=directory, -=file; next nine chars are owner/group/other permissions."),
+         h("Command", "ls -l")],
+        [cmd("ls -l"), cmd("ls -la")],
+      ),
+      step(
+        "cd-var-log",
+        "Navigate to /var/log where log file permissions matter for forensics integrity.",
+        "Log tampering requires write access — checking permissions reveals if logs are protected.",
+        [h("Command", "cd /var/log")],
+        [cmd("cd /var/log")],
+      ),
+      step(
+        "ls-log-perms",
+        "Long-list log files to see who can read auth events.",
+        "World-readable auth.log on shared hosts can leak credentials and IP addresses.",
+        [h("Command", "ls -l auth.log")],
+        [cmd("ls -l"), cmd("ls -la"), prefix("ls -l")],
+      ),
+      step(
+        "cat-auth",
+        "Read auth.log — you need read permission on the file for this to succeed.",
+        "Permission denied errors during investigations often mean you need sudo or a different role.",
+        [h("Command", "cat auth.log")],
+        [cmd("cat auth.log")],
+        "Successful read means your user has r-- on the file — note this for least-privilege reviews.",
+      ),
+    ],
+  ),
+
+  "linux-users-groups": lab(
+    "Users and groups lab",
+    "Inspect how Linux represents identities in /etc/passwd.",
+    LINUX_SCENARIO,
+    [
+      step(
+        "whoami",
+        "Print the username of the current shell session.",
+        "Knowing which account you are running as prevents accidental changes as root.",
+        [h("Command", "whoami")],
+        [cmd("whoami")],
+      ),
+      step(
+        "cd-etc",
+        "Move to /etc where passwd and group files define local identities.",
+        [h("Command", "cd /etc")],
+        [cmd("cd /etc")],
+      ),
+      step(
+        "cat-passwd",
+        "Display passwd to see UID, home directory, and shell for each account.",
+        "Service accounts (www-data, nobody) often have nologin shells — attackers target weak service perms.",
+        [h("Command", "cat passwd")],
+        [cmd("cat passwd")],
+      ),
+      step(
+        "grep-student",
+        "Filter passwd for the student account line only.",
+        "grep isolates one user from hundreds of lines — faster than scrolling.",
+        [h("Syntax", "grep PATTERN FILE"), h("Command", "grep student passwd")],
+        [prefix("grep student"), prefix("grep student passwd")],
+        "You isolated one identity record — the same pattern for finding suspicious usernames.",
+      ),
+    ],
+  ),
+
+  "linux-processes": lab(
+    "Processes lab",
+    "See what programs are running — critical when hunting malware or resource abuse.",
+    LINUX_SCENARIO,
+    [
+      step(
+        "ps",
+        "List running processes on the simulated host.",
+        "Unexpected processes (unknown miners, reverse shells) stand out in ps output.",
+        [h("Concept", "ps shows PID, TTY, and command name."), h("Command", "ps"), h("Alt", "ps aux")],
+        [prefix("ps")],
+      ),
+      step(
+        "ss-listen",
+        "List listening network ports — processes often bind to ports for services.",
+        "A process listening on 4444 when none should be there is a red flag.",
+        [h("Command", "ss -tulpn"), h("Alt", "netstat -tulpn")],
+        [prefix("ss"), prefix("netstat")],
+      ),
+      step(
+        "cd-var-log",
+        "Navigate to /var/log before searching authentication events.",
+        [h("Command", "cd /var/log")],
+        [cmd("cd /var/log")],
+      ),
+      step(
+        "grep-sshd-log",
+        "Grep auth.log for sshd events tied to remote access.",
+        "Correlating running sshd with auth.log entries confirms active remote sessions.",
+        [h("Command", "grep sshd auth.log")],
+        [cmd("grep sshd auth.log"), prefix("grep sshd")],
+        "Process list + auth logs = basic foothold validation workflow.",
+      ),
+    ],
+  ),
+
+  "linux-services": lab(
+    "Services lab",
+    "Identify which network services are listening on the host.",
+    LINUX_SCENARIO,
+    [
+      step(
+        "ss",
+        "Show listening TCP/UDP ports with ss.",
+        "Defenders verify only expected ports (22, 80, 443) are open after hardening.",
+        [h("Command", "ss -tulpn")],
+        [prefix("ss")],
+      ),
+      step(
+        "grep-http",
+        "Check if a web server port appears in the listening list (look for :80).",
+        "Unexpected HTTP on high ports may indicate a webshell or C2 channel.",
+        [h("Concept", "LISTEN state + port number reveals bound services."), h("Command", "ss -tulpn")],
+        [prefix("ss")],
+      ),
+      step(
+        "cat-syslog",
+        "Read syslog for service start/stop events after identifying open ports.",
+        "Service restarts in logs can explain new listening ports.",
+        [h("Approach", "cd /var/log, then cat syslog"), h("Command", "cat syslog")],
+        [prefix("cat syslog"), cmd("cat /var/log/syslog")],
+        "Port inventory + service logs = baseline validation after patching.",
+      ),
+    ],
+  ),
+
+  "linux-package-management": lab(
+    "Package awareness lab",
+    "Connect installed software to running services and patch discipline.",
+    LINUX_SCENARIO,
+    [
+      step(
+        "ss-services",
+        "List listening ports to infer which services are deployed.",
+        "You cannot patch what you have not inventoried — ports hint at installed packages.",
+        [h("Command", "ss -tulpn")],
+        [prefix("ss")],
+      ),
+      step(
+        "cat-passwd-services",
+        "Inspect passwd for service accounts like www-data tied to daemons.",
+        "Package-installed daemons often run as dedicated users listed in passwd.",
+        [h("Approach", "cd /etc && grep www passwd or cat passwd"), h("Command", "grep www passwd")],
+        [prefix("grep www")],
+      ),
+      step(
+        "echo-patch",
+        "Echo a reminder that patching closes known vulnerabilities in installed packages.",
+        "Equifax-class breaches often trace to one unpatched package — process matters as much as tools.",
+        [h("Command", 'echo "Verify package updates in change window"')],
+        [prefix("echo")],
+        "Inventory → patch → verify ports — the defensive loop packages enable.",
+      ),
+    ],
+  ),
+
+  "linux-bash-basics": lab(
+    "Shell basics lab",
+    "Use echo and navigation to build command-line confidence.",
+    LINUX_SCENARIO,
+    [
+      step(
+        "echo-intro",
+        "Echo a short message confirming you are in the training shell.",
+        "echo verifies the shell interprets your input before you run destructive commands.",
+        [h("Syntax", 'echo "your message"'), h("Command", "echo ready")],
+        [prefix("echo")],
+      ),
+      step(
+        "pwd",
+        "Print working directory after echo.",
+        "Combining simple commands builds muscle memory for longer pipelines later.",
+        [h("Command", "pwd")],
+        [cmd("pwd")],
+      ),
+      step(
+        "cd-var",
+        "Change to /var/log and list contents.",
+        "Chaining cd + ls is the daily rhythm of log review.",
+        [h("Command", "cd /var/log"), h("Then", "ls")],
+        [cmd("cd /var/log")],
+      ),
+      step(
+        "ls-log",
+        "List files in /var/log.",
+        [h("Command", "ls")],
+        [prefix("ls")],
+        "You navigated and listed — the foundation of every shell investigation.",
+      ),
+    ],
+  ),
+
+  "linux-environment-variables": lab(
+    "Environment variables lab",
+    "Inspect environment variables that affect command behavior and paths.",
+    LINUX_SCENARIO,
+    [
+      step(
+        "env",
+        "Print environment variables for this session.",
+        "HOME, PATH, and USER influence which binaries run and where files are found.",
+        [h("Command", "env")],
+        [cmd("env")],
+      ),
+      step(
+        "echo-home",
+        "Echo the HOME path conceptually (HOME is set in env output above).",
+        "Scripts and tools rely on $HOME — attackers drop files in ~/.ssh or ~/.config.",
+        [h("Command", 'echo $HOME or echo /home/student')],
+        [prefix("echo")],
+      ),
+      step(
+        "cat-bashrc",
+        "Read .bashrc in your home directory — shell startup sets variables and aliases.",
+        "Persistence often modifies .bashrc to export malicious PATH entries.",
+        [h("Command", "cat .bashrc")],
+        [cmd("cat .bashrc")],
+        "Startup files define your environment — check them during compromise assessments.",
+      ),
+    ],
+  ),
+
+  "linux-ssh-concepts": lab(
+    "SSH and auth lab",
+    "Review authentication events the way you would after suspicious SSH alerts.",
+    LINUX_SCENARIO,
+    [
+      step(
+        "cd-var-log",
+        "Navigate to /var/log where SSH auth events are recorded.",
+        [h("Command", "cd /var/log")],
+        [cmd("cd /var/log")],
+      ),
+      step(
+        "grep-failed",
+        "Grep auth.log for failed password attempts.",
+        "Brute-force attacks generate Failed password lines — count and source IP matter.",
+        [h("Command", "grep Failed auth.log"), h("Alt", "grep 'Failed password' auth.log")],
+        [prefix("grep Failed"), prefix("grep failed")],
+      ),
+      step(
+        "grep-accepted",
+        "Grep auth.log for successful Accepted logins.",
+        "After failures, a single Accepted line may mean the attacker got in.",
+        [h("Command", "grep Accepted auth.log")],
+        [prefix("grep Accepted"), prefix("grep accepted")],
+      ),
+      step(
+        "tail-auth",
+        "Tail auth.log to see the most recent authentication events.",
+        "During live incidents, analysts tail logs to watch attacks in real time.",
+        [h("Command", "tail auth.log")],
+        [prefix("tail")],
+        "Failure bursts + recent Accepted = escalate to incident response.",
+      ),
+    ],
+  ),
+
+  "linux-logs-networking": lab(
+    "Logs and networking lab",
+    "Combine log review with open-port inspection on one host.",
+    LINUX_SCENARIO,
+    [
+      step(
+        "ss",
+        "List listening ports on the lab host.",
+        "Open ports tell you what services generate logs you should search.",
+        [h("Command", "ss -tulpn")],
+        [prefix("ss")],
+      ),
+      step(
+        "cd-var-log",
+        "Move to /var/log to inspect service logs.",
+        [h("Command", "cd /var/log")],
+        [cmd("cd /var/log")],
+      ),
+      step(
+        "tail-auth",
+        "Tail auth.log for recent SSH-related activity.",
+        [h("Command", "tail auth.log")],
+        [prefix("tail")],
+      ),
+      step(
+        "ping-target",
+        "Ping the training target from /etc/hosts to verify network reachability.",
+        "Connectivity checks precede deeper scans — confirm the host is up first.",
+        [h("Command", "ping training-target"), h("Alt", "ping 10.10.10.25")],
+        [prefix("ping")],
+        "Ports + logs + ping = minimal host triage without leaving the terminal.",
+      ),
+    ],
+  ),
+};

@@ -64,6 +64,7 @@ export const learningPathMeta: LearningPathMeta[] = [
     estimatedHours: 16,
     order: 5,
     prerequisitePathId: "networking",
+    specialization: "Web Security",
     practiceLinks: [
       { label: "Vulnerable Lab", to: paths.vulnerableLab, type: "vulnerable-lab" },
     ],
@@ -130,6 +131,16 @@ export const roadmapSpecializations = [
   "Threat Intelligence",
   "Incident Response",
 ] as const;
+
+/** Maps roadmap specialization labels to learning path IDs. */
+export const roadmapSpecPathMap: Record<(typeof roadmapSpecializations)[number], string> = {
+  "SOC Analyst": "soc",
+  "Digital Forensics": "forensics",
+  OSINT: "osint",
+  "Web Security": "web-security",
+  "Threat Intelligence": "soc",
+  "Incident Response": "soc",
+};
 
 export function getPathMeta(id: string): LearningPathMeta | undefined {
   return learningPathMeta.find((p) => p.id === id);

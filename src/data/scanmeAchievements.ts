@@ -1,7 +1,38 @@
 export const scanMeAchievements = [
-  { id: "first-scan", title: "First Scan", description: "Complete your first ScanMe mission.", xpBonus: 25 },
-  { id: "recon-rookie", title: "Recon Rookie", description: "Complete the beginner ScanMe challenge.", xpBonus: 50 },
-  { id: "port-hunter", title: "Port Hunter", description: "Map all target ports in Port Hunter.", xpBonus: 75 },
-  { id: "service-detective", title: "Service Detective", description: "Correctly identify all services.", xpBonus: 75 },
-  { id: "network-recon", title: "Network Recon", description: "Complete all ScanMe challenges.", xpBonus: 200 },
+  {
+    id: "nmap-initiate",
+    title: "Nmap Initiate",
+    description: "Completed your first Nmap scan in ScanMe.",
+    xpBonus: 25,
+  },
+  {
+    id: "port-hunter",
+    title: "Port Hunter",
+    description: "Successfully identified open ports from scan output.",
+    xpBonus: 40,
+  },
+  {
+    id: "service-detective",
+    title: "Service Detective",
+    description: "Completed service/version detection training.",
+    xpBonus: 50,
+  },
+  {
+    id: "full-sweep",
+    title: "Full Sweep",
+    description: "Discovered a hidden service with a full port scan.",
+    xpBonus: 60,
+  },
+  {
+    id: "nmap-apprentice",
+    title: "Nmap Apprentice",
+    description: "Completed the core ScanMe curriculum through combined scanning.",
+    xpBonus: 100,
+  },
+  {
+    id: "scanme-master",
+    title: "ScanMe Master",
+    description: "Completed every ScanMe training mission.",
+    xpBonus: 150,
+  },
 ];

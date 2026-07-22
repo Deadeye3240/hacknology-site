@@ -20,6 +20,7 @@ export interface DiscussionListItem {
   author_username: string;
   author_display_name: string;
   author_avatar: string | null;
+  content_excerpt?: string;
   reply_count: number;
 }
 

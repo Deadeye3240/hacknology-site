@@ -18,7 +18,7 @@ export const fundamentalsLessons: Lesson[] = [
       "Explain why cybersecurity is a business risk, not only a technical concern",
     ],
     introduction:
-      "Cybersecurity is the practice of protecting computers, networks, data, and the people who use them from unauthorized access, disruption, theft, and damage. It spans technology, processes, and human behavior — not just firewalls and antivirus. Whether you are securing a personal laptop or a multinational cloud platform, the same principles apply: understand what you are protecting, who might attack it, and how to reduce harm when defenses fail.",
+      "Cybersecurity is the practice of protecting computers, networks, data, and the people who use them from unauthorized access, disruption, theft, and damage. It spans technology, processes, and human behavior — not just firewalls and antivirus.\n\nIf you are new to technical topics: a **terminal** (also called a command line or shell) is a text-based way to give instructions to a computer. You will use a safe simulated terminal in many lessons — nothing runs on a real server. Your first job is to understand *why* each command exists, not memorize syntax.",
     coreConcepts: [
       "Cybersecurity protects the confidentiality, integrity, and availability of information and systems.",
       "Assets include data, software, hardware, identities, and reputation — not only servers.",
@@ -30,7 +30,7 @@ export const fundamentalsLessons: Lesson[] = [
     realWorld:
       "The 2017 Equifax breach exposed data on roughly 147 million people because an unpatched Apache Struts vulnerability was left unaddressed for months despite a public fix. The technical failure was one missing patch; the organizational failure was weak vulnerability management and accountability. Cybersecurity incidents are rarely caused by a single magic hacker trick — they are usually a chain of neglected basics.",
     scenario:
-      "You join a 40-person startup that stores customer payment details in a cloud database. The CEO asks, 'Do we need cybersecurity? We are too small to be a target.' How would you explain that size does not immunize them — automated attacks scan the entire internet, and stolen payment data has value regardless of company revenue?",
+      "You join a 40-person startup that stores customer payment details in a cloud database. The CEO asks, 'Do we need cybersecurity? We are too small to be a target.' How would you explain that size does not immunize them — automated attacks scan the entire internet, and stolen payment data has value regardless of company revenue?\n\nIn the terminal lab, you will read a sample alert and check auth logs the way a junior analyst would.",
     practical: [
       {
         kind: "alert",
@@ -77,6 +77,8 @@ export const fundamentalsLessons: Lesson[] = [
         "Vulnerabilities are flaws in systems, configurations, or processes that threats can abuse.",
       ),
     ],
+    conclusion:
+      "You can now define cybersecurity in plain language, connect it to real alerts and logs, and explain why even small organizations face automated threats.",
   }),
 
   createLesson({
@@ -105,7 +107,7 @@ export const fundamentalsLessons: Lesson[] = [
     realWorld:
       "The 2021 Colonial Pipeline ransomware attack primarily impacted availability — fuel distribution systems were shut down — but also raised integrity concerns about whether operational technology was altered. The 2016 Democratic National Committee email leak was a confidentiality failure. Financial fraud via altered wire-transfer instructions is an integrity failure. Classifying incidents by CIA property helps response teams prioritize: restore service, verify data accuracy, or contain data exposure.",
     scenario:
-      "A hospital's electronic health record system is encrypted and backed up nightly. An attacker deploys ransomware that encrypts production databases, and clinicians cannot access patient records during surgery scheduling. Which CIA properties are affected? What is the immediate priority?",
+      "A hospital's electronic health record system is encrypted and backed up nightly. An attacker deploys ransomware that encrypts production databases, and clinicians cannot access patient records during surgery scheduling. Which CIA properties are affected? What is the immediate priority?\n\nThe terminal lab maps confidentiality (reading notes), integrity (log tampering detection), and availability (ping) to concrete commands.",
     practical: [
       {
         kind: "log",
@@ -152,6 +154,8 @@ export const fundamentalsLessons: Lesson[] = [
         "Signatures verify that content has not been tampered with since signing.",
       ),
     ],
+    conclusion:
+      "You can classify real incidents by which CIA property failed and explain trade-offs between confidentiality, integrity, and availability.",
   }),
 
   createLesson({
@@ -227,6 +231,8 @@ export const fundamentalsLessons: Lesson[] = [
         "The vector is the delivery mechanism — email — not the weakness being exploited.",
       ),
     ],
+    conclusion:
+      "You can categorize threat actors by motivation and capability, and distinguish threats, actors, and attack vectors in incident discussions.",
   }),
 
   createLesson({
@@ -255,7 +261,7 @@ export const fundamentalsLessons: Lesson[] = [
     realWorld:
       "Log4Shell (CVE-2021-44228) was a critical vulnerability in the widely used Log4j logging library. Because Log4j was embedded in countless applications, organizations spent weeks identifying affected systems and applying mitigations. Companies that lacked asset inventory and vulnerability scanning struggled far longer than those with mature programs. The flaw was public; attackers automated exploitation within hours.",
     scenario:
-      "A weekly vulnerability scan reports CVE-2024-1234 (CVSS 8.1) on your company's customer-facing web server. The vendor patch requires a brief maintenance window. Marketing has a product launch in 48 hours and asks to delay patching. How do you assess risk, and what compensating controls might you apply short-term?",
+      "A weekly vulnerability scan reports CVE-2024-1234 (CVSS 8.1) on your company's customer-facing web server. The vendor patch requires a brief maintenance window. Marketing has a product launch in 48 hours and asks to delay patching. How do you assess risk, and what compensating controls might you apply short-term?\n\nThe lab reinforces that vulnerabilities appear as open ports, misconfigured accounts, and missing patches — enumerate before you debate timelines.",
     practical: [
       {
         kind: "command",
@@ -302,6 +308,8 @@ export const fundamentalsLessons: Lesson[] = [
         "CVE provides a common reference for tracking and discussing specific vulnerabilities.",
       ),
     ],
+    conclusion:
+      "You can explain the vulnerability management lifecycle and prioritize fixes using severity, exposure, and asset value — not CVSS alone.",
   }),
 
   createLesson({

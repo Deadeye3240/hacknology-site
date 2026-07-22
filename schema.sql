@@ -2,6 +2,7 @@
 --
 -- Apply locally:      npm run db:migrate:local
 -- Apply to remote D1: npm run db:migrate
+-- See docs/CLOUDFLARE-DEPLOY.md for production deployment steps.
 --
 -- All timestamps are ISO-8601 UTC strings. Booleans are stored as 0/1.
 
@@ -59,6 +60,14 @@ CREATE TABLE IF NOT EXISTS lab_progress (
   started_at   TEXT,
   completed_at TEXT,
   PRIMARY KEY (user_id, lab_id)
+);
+
+CREATE TABLE IF NOT EXISTS path_progress (
+  user_id           TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  path_id           TEXT NOT NULL,
+  assessment_score  INTEGER,
+  completed_at      TEXT NOT NULL,
+  PRIMARY KEY (user_id, path_id)
 );
 
 -- ---------------------------------------------------------------------------

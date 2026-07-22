@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { NavGroup } from "@/types";
 import { navGroups as defaultNavGroups } from "@/data/navigation";
+import { mergeNavGroups } from "@/lib/navMerge";
 import { api } from "@/lib/api";
 
 /** Load navbar groups from CMS API with static fallback. */
@@ -14,7 +15,7 @@ export function useCmsNavigation(): NavGroup[] {
       )
       .then((res) => {
         if (res.navigation && res.navigation.length > 0) {
-          setGroups(res.navigation);
+          setGroups(mergeNavGroups(res.navigation, defaultNavGroups));
         }
       })
       .catch(() => {

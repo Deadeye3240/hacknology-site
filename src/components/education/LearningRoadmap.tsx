@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { learningPaths } from "@/data/learningPaths";
-import { roadmapSpecializations } from "@/data/lessons/learningPathMeta";
+import { roadmapSpecializations, roadmapSpecPathMap } from "@/data/lessons/learningPathMeta";
 import { useLessonProgress } from "@/context/LessonProgressContext";
 import { paths } from "@/routes/paths";
 import { ArrowRightIcon } from "@/components/ui/icons";
@@ -10,7 +10,6 @@ import { ArrowRightIcon } from "@/components/ui/icons";
 export function LearningRoadmap() {
   const { isPathCompleted, pathProgressPercent } = useLessonProgress();
   const corePaths = [...learningPaths].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).slice(0, 5);
-  const specPaths = learningPaths.filter((p) => p.specialization);
 
   return (
     <Card className="flex flex-col gap-6 p-6">
@@ -30,7 +29,8 @@ export function LearningRoadmap() {
         </p>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {roadmapSpecializations.map((spec) => {
-            const path = specPaths.find((p) => p.specialization === spec);
+            const pathId = roadmapSpecPathMap[spec];
+            const path = pathId ? learningPaths.find((p) => p.id === pathId) : undefined;
             if (!path) {
               return (
                 <span

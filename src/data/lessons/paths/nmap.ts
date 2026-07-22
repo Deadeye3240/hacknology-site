@@ -35,7 +35,7 @@ export const nmapLessons = [
     realWorld:
       "Bug bounty programs define in-scope domains. Penetration tests include ROE prohibiting production DoS. SOC teams run internal discovery scans quarterly with change management approval.",
     scenario:
-      "A student runs Nmap against a university server without permission and triggers an alert. Explain why this differs from the professor's scheduled lab on approved targets.",
+      "A student runs Nmap against a university server without permission and triggers an alert. Explain why this differs from the professor's scheduled lab on approved targets.\n\nThe terminal lab uses only the authorized training target 10.10.10.25 — the same scope discipline required in real engagements.",
     terms: [
       { term: "Attack surface", definition: "All points where an unauthorized user could interact with or attack a system." },
       { term: "Rules of engagement (ROE)", definition: "Contractual document defining authorized targets, methods, and limits for a security test." },
@@ -73,6 +73,8 @@ export const nmapLessons = [
         "Passive methods rely on third-party or historical data without direct probing.",
       ),
     ],
+    conclusion:
+      "You can distinguish passive from active recon, articulate authorization requirements, and explain why scope documents matter before any probe.",
   }),
 
   createLesson({
