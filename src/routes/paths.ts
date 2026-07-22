@@ -8,6 +8,13 @@ export const paths = {
   resources: "/resources",
   about: "/about",
 
+  // Legal
+  legal: "/legal",
+  terms: "/terms",
+  privacy: "/privacy",
+  acceptableUse: "/acceptable-use",
+  support: "/support",
+
   // Authentication & account
   login: "/login",
   register: "/register",

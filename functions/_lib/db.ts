@@ -461,6 +461,56 @@ export class Db {
       .run();
   }
 
+  // ---- Support messages --------------------------------------------------
+  async createSupportMessage(input: {
+    userId: string | null;
+    name: string;
+    email: string;
+    subject: string;
+    message: string;
+  }): Promise<string> {
+    const id = uuid();
+    await this.d1
+      .prepare(
+        `INSERT INTO support_messages (id, user_id, name, email, subject, message, status, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, 'open', ?)`,
+      )
+      .bind(
+        id,
+        input.userId,
+        input.name,
+        input.email,
+        input.subject,
+        input.message,
+        this.now(),
+      )
+      .run();
+    return id;
+  }
+
+  async listSupportMessages() {
+    const res = await this.d1
+      .prepare(
+        `SELECT * FROM support_messages
+         ORDER BY (status = 'open') DESC, created_at DESC LIMIT 200`,
+      )
+      .all();
+    return res.results ?? [];
+  }
+
+  async updateSupportMessageStatus(
+    id: string,
+    status: "open" | "read" | "closed",
+    reviewerId: string,
+  ): Promise<void> {
+    await this.d1
+      .prepare(
+        "UPDATE support_messages SET status = ?, reviewed_by = ?, reviewed_at = ? WHERE id = ?",
+      )
+      .bind(status, reviewerId, this.now(), id)
+      .run();
+  }
+
   // ---- Stats -------------------------------------------------------------
   async stats() {
     const one = async (sql: string) =>
@@ -471,6 +521,7 @@ export class Db {
       discussions: await one("SELECT COUNT(*) AS n FROM forum_discussions WHERE removed = 0"),
       replies: await one("SELECT COUNT(*) AS n FROM forum_replies WHERE removed = 0"),
       openReports: await one("SELECT COUNT(*) AS n FROM reports WHERE status = 'open'"),
+      openSupport: await one("SELECT COUNT(*) AS n FROM support_messages WHERE status = 'open'"),
     };
   }
 

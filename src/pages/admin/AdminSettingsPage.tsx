@@ -45,7 +45,7 @@ export default function AdminSettingsPage() {
       {saved && <Alert variant="success">Settings saved.</Alert>}
       <Card className="flex flex-col gap-4 p-5">
         <TextField label="Twitter / X URL" value={social.twitter} onChange={(e) => setSocial((s) => ({ ...s, twitter: e.target.value }))} />
-        <TextField label="GitHub URL" value={social.github} onChange={(e) => setSocial((s) => ({ ...s, github: e.target.value }))} />
+        <TextField label="GitHub URL" value={social.github} onChange={(e) => setSocial((s) => ({ ...s, github: e.target.value }))} placeholder="https://github.com/Deadeye3240" />
         <TextField
           label="Discord invite URL"
           value={social.discord}

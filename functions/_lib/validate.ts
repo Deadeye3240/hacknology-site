@@ -59,3 +59,22 @@ export function validateReason(reason: string): string | null {
   if (reason.length > 500) return "Reason must be 500 characters or fewer.";
   return null;
 }
+
+export function validateSupportName(name: string): string | null {
+  if (!name.trim()) return "Name is required.";
+  if (name.length > 80) return "Name must be 80 characters or fewer.";
+  return null;
+}
+
+export function validateSubject(subject: string): string | null {
+  if (!subject.trim()) return "Subject is required.";
+  if (subject.length > 140) return "Subject must be 140 characters or fewer.";
+  return null;
+}
+
+export function validateSupportMessage(message: string): string | null {
+  if (!message.trim()) return "Message is required.";
+  if (message.length < 10) return "Message must be at least 10 characters.";
+  if (message.length > 5000) return "Message must be 5,000 characters or fewer.";
+  return null;
+}

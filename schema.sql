@@ -114,6 +114,22 @@ CREATE TABLE IF NOT EXISTS reports (
 );
 CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status);
 
+CREATE TABLE IF NOT EXISTS support_messages (
+  id          TEXT PRIMARY KEY,
+  user_id     TEXT REFERENCES users(id) ON DELETE SET NULL,
+  name        TEXT NOT NULL,
+  email       TEXT NOT NULL,
+  subject     TEXT NOT NULL,
+  message     TEXT NOT NULL,
+  status      TEXT NOT NULL DEFAULT 'open'
+              CHECK (status IN ('open', 'read', 'closed')),
+  created_at  TEXT NOT NULL,
+  reviewed_by TEXT REFERENCES users(id),
+  reviewed_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_support_status ON support_messages(status);
+CREATE INDEX IF NOT EXISTS idx_support_created ON support_messages(created_at);
+
 -- Append-only log of important administrative actions.
 CREATE TABLE IF NOT EXISTS admin_audit_log (
   id          TEXT PRIMARY KEY,

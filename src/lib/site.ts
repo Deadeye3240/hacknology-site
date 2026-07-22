@@ -14,6 +14,7 @@ export const site = {
     "Hacknology is a cybersecurity education platform built to help students understand security concepts, practice in controlled environments, and develop responsible defensive security skills.",
   discordInviteUrl: "https://discord.gg/R6JQy9b9ey",
   discordInviteCode: "R6JQy9b9ey",
+  githubUrl: "https://github.com/Deadeye3240",
   year: 2026,
 } as const;
 

@@ -1,5 +1,6 @@
 import type { NavGroup, NavItem } from "@/types";
 import { paths } from "@/routes/paths";
+import { site } from "@/lib/site";
 
 /** Grouped navigation for the navbar dropdown menus. */
 export const navGroups: NavGroup[] = [
@@ -21,13 +22,17 @@ export const navGroups: NavGroup[] = [
   },
   {
     label: "Community",
-    items: [{ label: "Forum", to: paths.forum }],
+    items: [
+      { label: "Forum", to: paths.forum },
+      { label: "Discord", to: site.discordInviteUrl, external: true },
+    ],
   },
   {
     label: "More",
     items: [
       { label: "Tools", to: paths.tools },
       { label: "About", to: paths.about },
+      { label: "Support", to: paths.support },
     ],
   },
 ];

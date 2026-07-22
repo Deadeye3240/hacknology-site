@@ -13,6 +13,7 @@ function clientValidate(values: {
   email: string;
   password: string;
   confirmPassword: string;
+  agreeToTerms: boolean;
 }): Record<string, string> {
   const fields: Record<string, string> = {};
   if (!/^[a-zA-Z0-9_]{3,24}$/.test(values.username)) {
@@ -27,6 +28,9 @@ function clientValidate(values: {
   if (values.confirmPassword !== values.password) {
     fields.confirmPassword = "Passwords do not match.";
   }
+  if (!values.agreeToTerms) {
+    fields.agreeToTerms = "You must agree to the Terms and Privacy Policy.";
+  }
   return fields;
 }
 
@@ -39,6 +43,7 @@ export default function RegisterPage() {
     email: "",
     password: "",
     confirmPassword: "",
+    agreeToTerms: false,
   });
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
@@ -129,6 +134,33 @@ export default function RegisterPage() {
           error={fieldErrors.confirmPassword}
           required
         />
+        <label className="flex items-start gap-3 text-sm text-slate-300">
+          <input
+            type="checkbox"
+            checked={values.agreeToTerms}
+            onChange={(e) => setValues((prev) => ({ ...prev, agreeToTerms: e.target.checked }))}
+            className="mt-1 rounded border-white/20 bg-white/5 text-accent-400"
+            aria-invalid={Boolean(fieldErrors.agreeToTerms)}
+          />
+          <span>
+            I agree to the{" "}
+            <Link to={paths.terms} className="text-accent-300 hover:text-accent-200">
+              Terms of Service
+            </Link>
+            ,{" "}
+            <Link to={paths.privacy} className="text-accent-300 hover:text-accent-200">
+              Privacy Policy
+            </Link>
+            , and{" "}
+            <Link to={paths.acceptableUse} className="text-accent-300 hover:text-accent-200">
+              Acceptable Use Policy
+            </Link>
+            .
+          </span>
+        </label>
+        {fieldErrors.agreeToTerms && (
+          <p className="text-sm text-red-300">{fieldErrors.agreeToTerms}</p>
+        )}
         <Button type="submit" disabled={submitting} className="w-full">
           {submitting ? "Creating account…" : "Create account"}
         </Button>

@@ -27,6 +27,11 @@ const ScanMeMissionPage = lazy(() => import("@/pages/ScanMeMissionPage"));
 const PathAssessmentPage = lazy(() => import("@/pages/PathAssessmentPage"));
 const CmsPage = lazy(() => import("@/pages/CmsPage"));
 const DynamicSlugPage = lazy(() => import("@/pages/DynamicSlugPage"));
+const TermsPage = lazy(() => import("@/pages/legal/TermsPage"));
+const PrivacyPage = lazy(() => import("@/pages/legal/PrivacyPage"));
+const AcceptableUsePage = lazy(() => import("@/pages/legal/AcceptableUsePage"));
+const LegalHubPage = lazy(() => import("@/pages/legal/LegalHubPage"));
+const SupportPage = lazy(() => import("@/pages/SupportPage"));
 const NotFoundPage = lazy(() => import("@/pages/NotFoundPage"));
 
 // Auth, account, forum, and admin pages.
@@ -56,6 +61,7 @@ const AdminHomepagePage = lazy(() => import("@/pages/admin/AdminHomepagePage"));
 const AdminAppearancePage = lazy(() => import("@/pages/admin/AdminAppearancePage"));
 const AdminSettingsPage = lazy(() => import("@/pages/admin/AdminSettingsPage"));
 const AdminDiscordPage = lazy(() => import("@/pages/admin/AdminDiscordPage"));
+const AdminSupportPage = lazy(() => import("@/pages/admin/AdminSupportPage"));
 const AdminUsersPage = lazy(() => import("@/pages/admin/AdminUsersPage"));
 const AdminReportsPage = lazy(() => import("@/pages/admin/AdminReportsPage"));
 
@@ -86,6 +92,11 @@ export function AppRoutes() {
           <Route path={`${paths.scanme}/:missionId`} element={<ScanMeMissionPage />} />
           <Route path={paths.resources} element={<ResourcesPage />} />
           <Route path={paths.about} element={<AboutPage />} />
+          <Route path={paths.legal} element={<LegalHubPage />} />
+          <Route path={paths.terms} element={<TermsPage />} />
+          <Route path={paths.privacy} element={<PrivacyPage />} />
+          <Route path={paths.acceptableUse} element={<AcceptableUsePage />} />
+          <Route path={paths.support} element={<SupportPage />} />
           <Route path={paths.games} element={<GamesHubPage />} />
           <Route path={`${paths.games}/stick-rider`} element={<GamePage />} />
           <Route path={`${paths.games}/cyber-trivia`} element={<CyberTriviaPage />} />
@@ -159,6 +170,7 @@ export function AppRoutes() {
               <Route path="appearance" element={<AdminAppearancePage />} />
               <Route path="settings" element={<AdminSettingsPage />} />
               <Route path="discord" element={<AdminDiscordPage />} />
+              <Route path="support" element={<AdminSupportPage />} />
               <Route path="users" element={<AdminUsersPage />} />
               <Route path="reports" element={<AdminReportsPage />} />
             </Route>

@@ -82,25 +82,39 @@ export function NavDropdown({ group }: NavDropdownProps) {
           role="menu"
           className="absolute left-0 top-full z-50 mt-2 min-w-[12rem] overflow-hidden rounded-xl border border-white/10 bg-base-950/95 py-1.5 shadow-xl shadow-black/40 backdrop-blur-md"
         >
-          {group.items.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === "/"}
-              role="menuitem"
-              className={({ isActive: itemActive }) =>
-                cn(
-                  "block px-4 py-2.5 text-sm transition-colors",
-                  itemActive
-                    ? "bg-accent-400/10 text-white"
-                    : "text-slate-300 hover:bg-white/[0.04] hover:text-white",
-                )
-              }
-              onClick={() => setOpen(false)}
-            >
-              {item.label}
-            </NavLink>
-          ))}
+          {group.items.map((item) =>
+            item.external ? (
+              <a
+                key={item.to}
+                href={item.to}
+                target="_blank"
+                rel="noreferrer noopener"
+                role="menuitem"
+                className="block px-4 py-2.5 text-sm text-slate-300 transition-colors hover:bg-white/[0.04] hover:text-white"
+                onClick={() => setOpen(false)}
+              >
+                {item.label}
+              </a>
+            ) : (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.to === "/"}
+                role="menuitem"
+                className={({ isActive: itemActive }) =>
+                  cn(
+                    "block px-4 py-2.5 text-sm transition-colors",
+                    itemActive
+                      ? "bg-accent-400/10 text-white"
+                      : "text-slate-300 hover:bg-white/[0.04] hover:text-white",
+                  )
+                }
+                onClick={() => setOpen(false)}
+              >
+                {item.label}
+              </NavLink>
+            ),
+          )}
         </div>
       )}
     </div>

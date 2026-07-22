@@ -58,6 +58,7 @@ export interface AdminDashboardStats {
     discussions: number;
     replies: number;
     openReports: number;
+    openSupport: number;
   };
   cms: {
     pages: number;
@@ -82,6 +83,7 @@ export const ADMIN_SECTIONS = [
   { to: "/admin/appearance", label: "Appearance" },
   { to: "/admin/settings", label: "Settings" },
   { to: "/admin/discord", label: "Discord" },
+  { to: "/admin/support", label: "Support" },
   { to: "/admin/users", label: "Users" },
   { to: "/admin/reports", label: "Reports" },
 ] as const;

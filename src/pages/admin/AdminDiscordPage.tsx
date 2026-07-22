@@ -229,14 +229,16 @@ export default function AdminDiscordPage() {
       <Card className="flex flex-col gap-4 p-5">
         <h3 className="text-sm font-semibold text-white">Bot persona & automatic notifications</h3>
         <TextField
-          label="Display name"
-          hint="Shown as the webhook bot name in Discord."
+          label="Display name (optional)"
+          hint="Leave blank to use the name set on the webhook in Discord."
+          placeholder="Uses Discord webhook name"
           value={persona.username}
           onChange={(e) => setPersona((p) => ({ ...p, username: e.target.value }))}
         />
         <TextField
           label="Avatar URL (optional)"
-          hint="Public image URL for the webhook avatar."
+          hint="Leave blank to use the avatar set on the webhook in Discord. Must be a public https:// image URL if set."
+          placeholder="Uses Discord webhook avatar"
           value={persona.avatarUrl}
           onChange={(e) => setPersona((p) => ({ ...p, avatarUrl: e.target.value }))}
         />

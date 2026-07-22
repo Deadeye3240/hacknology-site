@@ -33,7 +33,10 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
     configured: webhook.configured,
     webhookUrl: webhook.webhookUrl,
     webhookSource: webhook.webhookSource,
-    persona,
+    persona: {
+      username: (await new CmsDb(env.DB).getSetting(DISCORD_SETTING_KEYS.username))?.trim() ?? "",
+      avatarUrl: persona.avatarUrl,
+    },
     notifications,
   });
 };
@@ -58,8 +61,7 @@ export const onRequestPut: PagesFunction<Env> = async ({ request, env }) => {
     settings[DISCORD_SETTING_KEYS.webhookUrl] = webhookUrl;
   }
   if ("username" in b) {
-    const username = asString(b.username).slice(0, 80);
-    settings[DISCORD_SETTING_KEYS.username] = username || "Hacknology Bot";
+    settings[DISCORD_SETTING_KEYS.username] = asString(b.username).slice(0, 80);
   }
   if ("avatarUrl" in b) {
     const avatarUrl = asString(b.avatarUrl).slice(0, 512);
@@ -96,13 +98,17 @@ export const onRequestPut: PagesFunction<Env> = async ({ request, env }) => {
     getDiscordNotificationSettings(env.DB),
     getDiscordWebhookStatus(env, env.DB),
   ]);
+  const storedUsername = (await cms.getSetting(DISCORD_SETTING_KEYS.username))?.trim() ?? "";
 
   return ok({
     saved: true,
     configured: webhook.configured,
     webhookUrl: webhook.webhookUrl,
     webhookSource: webhook.webhookSource,
-    persona,
+    persona: {
+      username: storedUsername,
+      avatarUrl: persona.avatarUrl,
+    },
     notifications,
   });
 };

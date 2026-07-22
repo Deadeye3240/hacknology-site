@@ -270,6 +270,14 @@ export function SparklesIcon(props: IconProps) {
   );
 }
 
+export function MessageIcon(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M21 14a4 4 0 01-4 4H8l-5 3V7a4 4 0 014-4h10a4 4 0 014 4z" />
+    </svg>
+  );
+}
+
 export function DiscordIcon(props: IconProps) {
   return (
     <svg

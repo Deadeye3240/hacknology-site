@@ -148,13 +148,24 @@ export function Navbar() {
                 <ul className="flex flex-col gap-1">
                   {group.items.map((item) => (
                     <li key={item.to}>
-                      <NavLink
-                        to={item.to}
-                        end={item.to === "/"}
-                        className={linkClasses}
-                      >
-                        {item.label}
-                      </NavLink>
+                      {item.external ? (
+                        <a
+                          href={item.to}
+                          target="_blank"
+                          rel="noreferrer noopener"
+                          className={cn(linkClasses({ isActive: false }), "block")}
+                        >
+                          {item.label}
+                        </a>
+                      ) : (
+                        <NavLink
+                          to={item.to}
+                          end={item.to === "/"}
+                          className={linkClasses}
+                        >
+                          {item.label}
+                        </NavLink>
+                      )}
                     </li>
                   ))}
                 </ul>

@@ -7,7 +7,7 @@ import { SecurityConsole } from "@/components/ui/SecurityConsole";
 import { FeatureCard } from "@/components/cards/FeatureCard";
 import { LearningPathCard } from "@/components/cards/LearningPathCard";
 import { LabCard } from "@/components/cards/LabCard";
-import { ArrowRightIcon, LockIcon } from "@/components/ui/icons";
+import { ArrowRightIcon, DiscordIcon, LockIcon } from "@/components/ui/icons";
 import { features } from "@/data/features";
 import { learningPaths } from "@/data/learningPaths";
 import { featuredLabs } from "@/data/labs";
@@ -39,6 +39,10 @@ export default function HomePage() {
             </Button>
             <Button to="/labs" size="lg" variant="secondary">
               Explore Labs
+            </Button>
+            <Button href={site.discordInviteUrl} size="lg" variant="secondary">
+              <DiscordIcon />
+              Join Discord
             </Button>
           </>
         }

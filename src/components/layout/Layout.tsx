@@ -2,6 +2,7 @@ import { Outlet } from "react-router-dom";
 import { Navbar } from "@/components/navigation/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { ScrollToTop } from "@/components/layout/ScrollToTop";
+import { SupportWidget } from "@/components/support/SupportWidget";
 
 /**
  * Application shell shared by every route: skip link, sticky navbar, the
@@ -26,6 +27,7 @@ export function Layout() {
       </main>
 
       <Footer />
+      <SupportWidget />
     </div>
   );
 }

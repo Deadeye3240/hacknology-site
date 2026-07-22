@@ -122,13 +122,22 @@ export async function getDiscordWebhookStatus(
   return { configured: false, webhookUrl: fromDb, webhookSource: null };
 }
 
-export async function getDiscordPersona(db: D1Database): Promise<DiscordPersona> {
+export async function getDiscordPersonaOverrides(db: D1Database): Promise<Partial<DiscordPersona>> {
   const cms = new CmsDb(db);
   const username = (await cms.getSetting(SETTING_USERNAME))?.trim();
   const avatarUrl = (await cms.getSetting(SETTING_AVATAR))?.trim();
+  const overrides: Partial<DiscordPersona> = {};
+  if (username) overrides.username = username;
+  if (avatarUrl) overrides.avatarUrl = avatarUrl;
+  return overrides;
+}
+
+/** Persona for admin UI display (includes friendly defaults). */
+export async function getDiscordPersona(db: D1Database): Promise<DiscordPersona> {
+  const overrides = await getDiscordPersonaOverrides(db);
   return {
-    username: username || DEFAULT_PERSONA.username,
-    avatarUrl: avatarUrl || null,
+    username: overrides.username || DEFAULT_PERSONA.username,
+    avatarUrl: overrides.avatarUrl ?? null,
   };
 }
 
@@ -189,8 +198,14 @@ export async function sendDiscordWebhook(
   if (!url) return false;
 
   const body: DiscordWebhookPayload = { ...payload };
-  if (persona?.username) body.username = truncate(persona.username, 80);
-  if (persona?.avatarUrl) body.avatar_url = persona.avatarUrl;
+  // Only override Discord's webhook name/avatar when explicitly configured in admin.
+  // Otherwise Discord uses the avatar and name set on the webhook in channel settings.
+  const username = persona?.username?.trim();
+  const avatarUrl = persona?.avatarUrl?.trim();
+  if (username) body.username = truncate(username, 80);
+  else delete body.username;
+  if (avatarUrl) body.avatar_url = avatarUrl;
+  else delete body.avatar_url;
 
   try {
     const res = await fetch(url, {
@@ -214,7 +229,7 @@ export async function sendDiscordEmbed(
     persona?: Partial<DiscordPersona>;
   },
 ): Promise<boolean> {
-  const persona = { ...(await getDiscordPersona(db)), ...options?.persona };
+  const persona = { ...(await getDiscordPersonaOverrides(db)), ...options?.persona };
   const payload: DiscordWebhookPayload = {
     embeds: [
       {
@@ -340,6 +355,38 @@ export async function notifyLessonCompleted(
   );
 }
 
+export async function notifySupportRequest(
+  env: Env,
+  db: D1Database,
+  ctx: DiscordContext,
+  input: {
+    id: string;
+    name: string;
+    email: string;
+    subject: string;
+    messagePreview: string;
+  },
+): Promise<void> {
+  scheduleDiscord(
+    ctx,
+    (async () => {
+      if (!(await isDiscordConfigured(env, db))) return;
+      await sendDiscordEmbed(env, db, {
+        title: "New support message",
+        url: `${SITE_URL}/admin/support`,
+        color: DiscordColor.admin,
+        author: brandAuthor(input.name),
+        description: truncate(input.messagePreview, 4000),
+        fields: [
+          { name: "Subject", value: truncate(input.subject, 256), inline: false },
+          { name: "Email", value: truncate(input.email, 256), inline: true },
+          { name: "Message ID", value: input.id, inline: true },
+        ],
+      });
+    })(),
+  );
+}
+
 export async function sendDiscordTest(
   env: Env,
   db: D1Database,
@@ -381,14 +428,13 @@ export async function sendDiscordAdminMessage(
     return { ok: false, error: "Provide message text or embed title/description." };
   }
 
-  const persona = {
-    ...(await getDiscordPersona(db)),
-    ...(input.username ? { username: truncate(input.username, 80) } : {}),
-    ...(input.avatarUrl ? { avatarUrl: input.avatarUrl } : {}),
+  const persona: Partial<DiscordPersona> = {
+    ...(await getDiscordPersonaOverrides(db)),
+    ...(input.username?.trim() ? { username: truncate(input.username, 80) } : {}),
+    ...(input.avatarUrl?.trim() ? { avatarUrl: input.avatarUrl.trim() } : {}),
   };
 
-  const payload: DiscordWebhookPayload = { username: persona.username };
-  if (persona.avatarUrl) payload.avatar_url = persona.avatarUrl;
+  const payload: DiscordWebhookPayload = {};
   if (content) payload.content = content;
 
   if (embedTitle || embedDescription) {

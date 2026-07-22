@@ -8,6 +8,8 @@ export type IconComponent = ComponentType<IconProps>;
 export interface NavItem {
   label: string;
   to: string;
+  /** External URL (opens in new tab). */
+  external?: boolean;
 }
 
 /** Grouped navigation section for the navbar dropdown menus. */

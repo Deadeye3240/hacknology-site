@@ -35,6 +35,7 @@ export default function AdminDashboardPage() {
           { label: "Media files", value: data?.cms.media },
           { label: "Discussions", value: data?.stats.discussions },
           { label: "Open reports", value: data?.stats.openReports },
+          { label: "Open support", value: data?.stats.openSupport },
           { label: "Total pages", value: data?.cms.pages },
         ].map((s) => (
           <Card key={s.label} className="flex flex-col gap-1 p-4">
@@ -51,6 +52,8 @@ export default function AdminDashboardPage() {
           <Button to="/admin/resources" variant="secondary" size="sm">Resources</Button>
           <Button to="/admin/navigation" variant="secondary" size="sm">Navigation</Button>
           <Button to="/admin/settings" variant="secondary" size="sm">Settings</Button>
+          <Button to="/admin/discord" variant="secondary" size="sm">Discord</Button>
+          <Button to="/admin/support" variant="secondary" size="sm">Support inbox</Button>
         </div>
         <p className="mt-4 text-xs text-slate-500">
           Published CMS pages are available at <code className="text-slate-400">/{`{slug}`}</code> or{" "}

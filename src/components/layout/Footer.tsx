@@ -3,6 +3,8 @@ import { site } from "@/lib/site";
 import { footerColumns } from "@/data/footer";
 import { Logo } from "@/components/ui/Logo";
 import { ExternalLink } from "@/components/ui/ExternalLink";
+import { creator } from "@/data/creator";
+import { paths } from "@/routes/paths";
 
 export function Footer() {
   return (
@@ -47,12 +49,19 @@ export function Footer() {
       </div>
 
       <div className="border-t border-white/5">
-        <div className="mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-2 px-4 py-6 text-xs text-slate-500 sm:flex-row sm:px-6 lg:px-8">
+        <div className="mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-3 px-4 py-6 text-xs text-slate-500 sm:flex-row sm:px-6 lg:px-8">
           <p>
             &copy; {site.year} {site.nameFormatted}. All rights reserved.
           </p>
-          <p className="font-mono uppercase tracking-widest text-slate-600">
-            {site.tagline}
+          <p className="text-center sm:text-right">
+            Maintained by{" "}
+            <Link to={paths.support} className="text-slate-400 hover:text-accent-300">
+              {creator.name}
+            </Link>
+            {" · "}
+            <ExternalLink href={site.githubUrl} className="text-slate-500 hover:text-accent-300" showIcon={false}>
+              GitHub
+            </ExternalLink>
           </p>
         </div>
       </div>
