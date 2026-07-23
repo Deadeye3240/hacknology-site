@@ -20,6 +20,10 @@ const GamesHubPage = lazy(() => import("@/pages/GamesHubPage"));
 const CyberTriviaPage = lazy(() => import("@/pages/games/CyberTriviaPage"));
 const CryptoPuzzlePage = lazy(() => import("@/pages/games/CryptoPuzzlePage"));
 const TerminalChallengePage = lazy(() => import("@/pages/games/TerminalChallengePage"));
+const PasswordStrengthPage = lazy(() => import("@/pages/games/PasswordStrengthPage"));
+const PhishingDetectorPage = lazy(() => import("@/pages/games/PhishingDetectorPage"));
+const LogHuntPage = lazy(() => import("@/pages/games/LogHuntPage"));
+const SecureOrVulnerablePage = lazy(() => import("@/pages/games/SecureOrVulnerablePage"));
 const VulnerableLabPage = lazy(() => import("@/pages/VulnerableLabPage"));
 const VulnerableLabChallengePage = lazy(() => import("@/pages/VulnerableLabChallengePage"));
 const ScanMePage = lazy(() => import("@/pages/ScanMePage"));
@@ -102,6 +106,10 @@ export function AppRoutes() {
           <Route path={`${paths.games}/cyber-trivia`} element={<CyberTriviaPage />} />
           <Route path={`${paths.games}/crypto-puzzle`} element={<CryptoPuzzlePage />} />
           <Route path={`${paths.games}/terminal-challenge`} element={<TerminalChallengePage />} />
+          <Route path={`${paths.games}/password-strength`} element={<PasswordStrengthPage />} />
+          <Route path={`${paths.games}/phishing-detector`} element={<PhishingDetectorPage />} />
+          <Route path={`${paths.games}/log-hunt`} element={<LogHuntPage />} />
+          <Route path={`${paths.games}/secure-or-vulnerable`} element={<SecureOrVulnerablePage />} />
           <Route path="/Game" element={<Navigate to={`${paths.games}/stick-rider`} replace />} />
           <Route path={paths.vulnerableLab} element={<VulnerableLabPage />} />
           <Route path={`${paths.vulnerableLab}/:challengeId`} element={<VulnerableLabChallengePage />} />

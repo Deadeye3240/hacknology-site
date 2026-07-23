@@ -3,10 +3,10 @@ import type { DiscussionListItem } from "@/types/forum";
 export type FeedSort = "latest" | "active" | "unanswered" | "trending";
 
 export const FEED_SORT_OPTIONS: { id: FeedSort; label: string; hint: string }[] = [
-  { id: "latest", label: "Latest", hint: "Recently updated discussions" },
-  { id: "active", label: "Active", hint: "Most replies" },
+  { id: "latest", label: "Newest", hint: "Recently created or updated discussions" },
+  { id: "active", label: "Active", hint: "Most replies in this view" },
   { id: "trending", label: "Trending", hint: "Popular recent conversations" },
-  { id: "unanswered", label: "Unanswered", hint: "No replies yet" },
+  { id: "unanswered", label: "Unanswered", hint: "Threads with no replies yet" },
 ];
 
 function trendingScore(d: DiscussionListItem): number {

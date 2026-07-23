@@ -62,14 +62,14 @@ export function Hero({
             )}
 
             {actions && (
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
                 {actions}
               </div>
             )}
           </div>
 
           {visual && (
-            <div className="relative hidden lg:block">{visual}</div>
+            <div className="relative hidden md:block">{visual}</div>
           )}
         </div>
       </div>

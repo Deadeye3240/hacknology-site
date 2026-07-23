@@ -55,3 +55,25 @@ export function splitInlineCode(text: string): Array<{ kind: "text" | "code"; va
       : { kind: "text" as const, value: part },
   );
 }
+
+const URL_RE = /(https?:\/\/[^\s<]+[^\s<.,;:!?)}\]"'])/g;
+
+/** Split plain text into text and URL segments for safe rendering. */
+export function splitLinks(text: string): Array<{ kind: "text" | "link"; value: string }> {
+  const parts: Array<{ kind: "text" | "link"; value: string }> = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  URL_RE.lastIndex = 0;
+  while ((match = URL_RE.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push({ kind: "text", value: text.slice(lastIndex, match.index) });
+    }
+    parts.push({ kind: "link", value: match[1] });
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < text.length) {
+    parts.push({ kind: "text", value: text.slice(lastIndex) });
+  }
+  if (parts.length === 0) parts.push({ kind: "text", value: text });
+  return parts;
+}

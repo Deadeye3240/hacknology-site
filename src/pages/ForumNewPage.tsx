@@ -17,6 +17,12 @@ Use fenced code blocks for commands. Add #tags in titles for discoverability.`;
 const fieldClass =
   "w-full rounded-md border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-xs text-slate-100 placeholder:text-slate-600 focus:border-accent-400/50 focus:outline-none focus:ring-1 focus:ring-accent-400/20";
 
+const CODE_SNIPPETS = [
+  { label: "Bash", value: "```bash\n\n```" },
+  { label: "Log", value: "```\n[timestamp] event detail\n```" },
+  { label: "Inline", value: "`command`" },
+] as const;
+
 export default function ForumNewPage() {
   const navigate = useNavigate();
   const [categories, setCategories] = useState<ForumCategory[]>([]);
@@ -37,6 +43,11 @@ export default function ForumNewPage() {
       })
       .catch(() => setError("Could not load categories."));
   }, []);
+
+  function insertSnippet(snippet: string) {
+    setContent((prev) => (prev ? `${prev}\n\n${snippet}` : snippet));
+    setShowPreview(false);
+  }
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -108,17 +119,29 @@ export default function ForumNewPage() {
             </div>
 
             <div className="flex flex-col gap-1">
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <label htmlFor="content" className="text-[11px] font-medium text-slate-400">
                   Content
                 </label>
-                <button
-                  type="button"
-                  onClick={() => setShowPreview((v) => !v)}
-                  className="text-[10px] font-medium text-slate-500 hover:text-accent-300"
-                >
-                  {showPreview ? "Edit" : "Preview"}
-                </button>
+                <div className="flex flex-wrap items-center gap-1">
+                  {CODE_SNIPPETS.map((snippet) => (
+                    <button
+                      key={snippet.label}
+                      type="button"
+                      onClick={() => insertSnippet(snippet.value)}
+                      className="rounded border border-white/10 px-1.5 py-0.5 text-[10px] font-medium text-slate-500 transition hover:border-accent-400/30 hover:text-accent-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent-400/40"
+                    >
+                      + {snippet.label}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setShowPreview((v) => !v)}
+                    className="rounded px-1.5 py-0.5 text-[10px] font-medium text-slate-500 hover:text-accent-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent-400/40"
+                  >
+                    {showPreview ? "Edit" : "Preview"}
+                  </button>
+                </div>
               </div>
               {showPreview ? (
                 <div className="min-h-[10rem] rounded-md border border-white/[0.06] bg-base-950/50 p-2">

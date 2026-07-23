@@ -44,6 +44,17 @@ export default function DiscussionPage() {
   const [actionBusy, setActionBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [linkCopied, setLinkCopied] = useState(false);
+
+  const copyThreadLink = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setLinkCopied(true);
+      window.setTimeout(() => setLinkCopied(false), 2000);
+    } catch {
+      setNotice("Could not copy link.");
+    }
+  }, []);
 
   const load = useCallback(async () => {
     if (!postId) return;
@@ -183,12 +194,11 @@ export default function DiscussionPage() {
         </PostAction>
       )}
       {isAuthenticated && (
-        <PostAction
-          onClick={() => setAction({ kind: "report", targetType: "discussion", targetId: detail.id })}
-        >
+        <PostAction onClick={() => setAction({ kind: "report", targetType: "discussion", targetId: detail.id })}>
           Report
         </PostAction>
       )}
+      <PostAction onClick={() => void copyThreadLink()}>{linkCopied ? "Link copied" : "Copy link"}</PostAction>
     </>
   );
 
@@ -206,6 +216,7 @@ export default function DiscussionPage() {
             role: detail.author?.role,
           }}
           createdAt={detail.createdAt}
+          updatedAt={detail.updatedAt}
           title={editingDiscussion ? undefined : detail.title}
           categoryName={detail.categoryName}
           locked={detail.locked}
@@ -254,6 +265,7 @@ export default function DiscussionPage() {
                   role: reply.author.role,
                 }}
                 createdAt={reply.createdAt}
+                updatedAt={reply.updatedAt}
                 content={reply.content}
                 removed={reply.removed}
                 editing={
@@ -312,7 +324,19 @@ export default function DiscussionPage() {
         {detail.locked ? (
           <Alert variant="info">This discussion is locked. New replies are disabled.</Alert>
         ) : isAuthenticated ? (
-          <div className="rounded-md border border-white/[0.06] bg-white/[0.01] p-2.5">
+          <>
+            {replies.length > 2 && (
+              <div className="flex justify-end">
+                <Button
+                  variant="ghost"
+                  size="xs"
+                  onClick={() => document.getElementById("reply-box")?.scrollIntoView({ behavior: "smooth" })}
+                >
+                  Jump to reply
+                </Button>
+              </div>
+            )}
+          <div id="reply-box" className="rounded-lg border border-white/[0.06] bg-base-950/95 p-3 sm:p-3.5 lg:sticky lg:bottom-4 lg:backdrop-blur-sm">
             <form onSubmit={submitReply} className="flex flex-col gap-2">
               {replyError && <Alert variant="error">{replyError}</Alert>}
               <TextAreaField
@@ -331,6 +355,7 @@ export default function DiscussionPage() {
               </div>
             </form>
           </div>
+          </>
         ) : (
           <Alert variant="info">
             <Button to={paths.login} variant="ghost" size="sm" className="px-1">

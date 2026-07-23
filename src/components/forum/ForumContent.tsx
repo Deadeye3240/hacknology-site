@@ -1,4 +1,4 @@
-import { parseForumContent, splitInlineCode } from "@/lib/forumContent";
+import { parseForumContent, splitInlineCode, splitLinks } from "@/lib/forumContent";
 import { cn } from "@/lib/cn";
 
 interface ForumContentProps {
@@ -20,14 +20,60 @@ function InlineText({ text }: { text: string }) {
             {part.value}
           </code>
         ) : (
-          <span key={`t-${i}`}>{part.value}</span>
+          <span key={`t-${i}`}>
+            {splitLinks(part.value).map((segment, j) =>
+              segment.kind === "link" ? (
+                <a
+                  key={`link-${i}-${j}`}
+                  href={segment.value}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-accent-300 underline decoration-accent-400/30 underline-offset-2 hover:text-accent-200"
+                >
+                  {segment.value}
+                </a>
+              ) : (
+                <span key={`text-${i}-${j}`}>{segment.value}</span>
+              ),
+            )}
+          </span>
         ),
       )}
     </>
   );
 }
 
-/** Renders forum plain text with fenced code blocks and inline `code`. */
+function CodeBlock({ code, language }: { code: string; language?: string }) {
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(code);
+    } catch {
+      /* clipboard unavailable */
+    }
+  }
+
+  return (
+    <div className="my-2 overflow-hidden rounded border border-white/[0.07] bg-[#0a0e14]">
+      <div className="flex items-center justify-between border-b border-white/[0.05] px-2 py-0.5">
+        <span className="font-mono text-[9px] uppercase tracking-wide text-slate-600">
+          {language || "code"}
+        </span>
+        <button
+          type="button"
+          onClick={copy}
+          className="rounded px-1.5 py-0.5 text-[10px] font-medium text-slate-500 transition hover:bg-white/[0.04] hover:text-slate-300"
+        >
+          Copy
+        </button>
+      </div>
+      <pre className="overflow-x-auto p-2 font-mono text-[11px] leading-relaxed text-slate-200">
+        <code>{code}</code>
+      </pre>
+    </div>
+  );
+}
+
+/** Renders forum plain text with fenced code blocks, inline `code`, and auto-linked URLs. */
 export function ForumContent({ content, className, compact = true }: ForumContentProps) {
   const blocks = parseForumContent(content);
 
@@ -41,21 +87,7 @@ export function ForumContent({ content, className, compact = true }: ForumConten
     >
       {blocks.map((block, i) => {
         if (block.type === "code") {
-          return (
-            <div
-              key={`code-${i}`}
-              className="my-2 overflow-hidden rounded border border-white/[0.07] bg-[#0a0e14]"
-            >
-              {block.language && (
-                <div className="border-b border-white/[0.05] px-2 py-0.5 font-mono text-[9px] uppercase tracking-wide text-slate-600">
-                  {block.language}
-                </div>
-              )}
-              <pre className="overflow-x-auto p-2 font-mono text-[11px] leading-relaxed text-slate-200">
-                <code>{block.code}</code>
-              </pre>
-            </div>
-          );
+          return <CodeBlock key={`code-${i}`} code={block.code} language={block.language} />;
         }
         const paragraphs = block.text.split(/\n\n+/);
         return paragraphs.map((para, j) => (

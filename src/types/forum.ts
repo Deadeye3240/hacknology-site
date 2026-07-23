@@ -24,6 +24,8 @@ export interface DiscussionListItem {
   reply_count: number;
 }
 
+/** Future persisted engagement (requires D1 + API): votes, bookmarks, community reputation. */
+
 export interface ForumAuthor {
   username: string;
   displayName: string;

@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { TargetIcon } from "@/components/ui/icons";
+import { useGameScore } from "@/hooks/useGameScore";
 import { paths } from "@/routes/paths";
 
 const QUESTIONS = [
@@ -36,10 +37,12 @@ const QUESTIONS = [
 ];
 
 export default function CyberTriviaPage() {
+  const { bestScore, saveScore } = useGameScore("cyber-trivia");
   const [index, setIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [finished, setFinished] = useState(false);
+  const [isNewBest, setIsNewBest] = useState(false);
 
   const current = QUESTIONS[index];
 
@@ -51,6 +54,8 @@ export default function CyberTriviaPage() {
 
   function next() {
     if (index + 1 >= QUESTIONS.length) {
+      const result = saveScore(score);
+      setIsNewBest(result.isNewBest);
       setFinished(true);
       return;
     }
@@ -63,6 +68,7 @@ export default function CyberTriviaPage() {
     setScore(0);
     setSelected(null);
     setFinished(false);
+    setIsNewBest(false);
   }
 
   return (
@@ -77,6 +83,9 @@ export default function CyberTriviaPage() {
                 <p className="text-slate-300">
                   You scored <strong>{score}</strong> out of {QUESTIONS.length}.
                 </p>
+                {isNewBest && (
+                  <p className="text-sm text-accent-300">New personal best saved locally.</p>
+                )}
                 <div className="flex gap-2">
                   <Button onClick={restart}>Play again</Button>
                   <Button to={paths.games} variant="ghost">
@@ -91,6 +100,9 @@ export default function CyberTriviaPage() {
                     Question {index + 1} / {QUESTIONS.length}
                   </Badge>
                   <span className="text-sm text-slate-400">Score: {score}</span>
+                  {bestScore !== null && (
+                    <span className="font-mono text-xs text-accent-300">Best {bestScore}</span>
+                  )}
                 </div>
                 <p className="text-lg font-medium text-white">{current.q}</p>
                 <ul className="flex flex-col gap-2">

@@ -57,6 +57,15 @@ export function ForumSidebar({ categories, category, onCategoryChange, stats }: 
         </dl>
       </Panel>
 
+      <Panel title="Guidelines">
+        <ul className="space-y-1.5 text-[11px] leading-snug text-slate-500">
+          <li>Be specific in titles — include tool, path, or error context.</li>
+          <li>Use fenced code blocks for commands and log snippets.</li>
+          <li>Search before posting; add #tags for discoverability.</li>
+          <li>Report spam or abuse — moderators review reports.</li>
+        </ul>
+      </Panel>
+
       <Panel title="Categories">
         <ul className="flex flex-col gap-px">
           <li>

@@ -4,6 +4,7 @@ import { PageContainer } from "@/components/layout/PageContainer";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { TerminalIcon } from "@/components/ui/icons";
+import { useGameScore } from "@/hooks/useGameScore";
 import { paths } from "@/routes/paths";
 
 const CHALLENGES = [
@@ -35,10 +36,12 @@ const CHALLENGES = [
 ];
 
 export default function TerminalChallengePage() {
+  const { bestScore, saveScore } = useGameScore("terminal-challenge");
   const [index, setIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [finished, setFinished] = useState(false);
+  const [isNewBest, setIsNewBest] = useState(false);
 
   const challenge = CHALLENGES[index];
 
@@ -50,6 +53,8 @@ export default function TerminalChallengePage() {
 
   function next() {
     if (index + 1 >= CHALLENGES.length) {
+      const result = saveScore(score);
+      setIsNewBest(result.isNewBest);
       setFinished(true);
       return;
     }
@@ -65,6 +70,9 @@ export default function TerminalChallengePage() {
           <Card className="flex flex-col gap-4">
             <div className="rounded-lg border border-emerald-500/20 bg-base-950 px-4 py-3 font-mono text-sm text-emerald-300">
               hacker@hacknology:~$ mission_{index + 1}
+              {bestScore !== null && !finished && (
+                <span className="float-right text-[10px] text-accent-300">best {bestScore}</span>
+              )}
             </div>
             {finished ? (
               <>
@@ -72,6 +80,9 @@ export default function TerminalChallengePage() {
                 <p className="text-slate-300">
                   {score} / {CHALLENGES.length} commands matched correctly.
                 </p>
+                {isNewBest && (
+                  <p className="text-sm text-accent-300">New personal best saved locally.</p>
+                )}
                 <div className="flex gap-2">
                   <Button
                     onClick={() => {
@@ -79,6 +90,7 @@ export default function TerminalChallengePage() {
                       setScore(0);
                       setSelected(null);
                       setFinished(false);
+                      setIsNewBest(false);
                     }}
                   >
                     Retry

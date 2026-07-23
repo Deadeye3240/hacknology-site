@@ -64,6 +64,7 @@ export default function ForumPage() {
   return (
     <CommunityShell
       title="Discussions"
+      description="Ask questions, share write-ups, and discuss cybersecurity topics with the Hacknology community."
       actions={
         isAuthenticated ? (
           <Button to={paths.forumNew} size="xs">
@@ -94,7 +95,7 @@ export default function ForumPage() {
             <CategoryFilter categories={categories} value={category} onChange={setCategory} />
           </div>
 
-          <div className="overflow-hidden rounded-md border border-white/[0.06] bg-white/[0.008]">
+          <div className="overflow-hidden rounded-lg border border-white/[0.06] bg-white/[0.008] shadow-sm shadow-black/10">
             <DiscussionFeedHeader />
 
             {discussionsFailed ? (

@@ -15,6 +15,7 @@ interface AuthorInfo {
 interface ForumPostProps {
   author: AuthorInfo;
   createdAt: string;
+  updatedAt?: string;
   content: string;
   title?: string;
   categoryName?: string;
@@ -36,6 +37,7 @@ function RoleTag({ role }: { role?: string }) {
 export function ForumPost({
   author,
   createdAt,
+  updatedAt,
   content,
   title,
   categoryName,
@@ -45,38 +47,47 @@ export function ForumPost({
   editing,
 }: ForumPostProps) {
   const tags = extractHashtags(title ?? "", content);
+  const edited = updatedAt != null && updatedAt !== createdAt;
 
   return (
     <article
       className={cn(
-        "rounded-md border border-white/[0.06] bg-white/[0.01]",
-        isOriginalPost && "border-accent-400/12 bg-accent-400/[0.015]",
+        "overflow-hidden rounded-lg border border-white/[0.06] bg-white/[0.01]",
+        isOriginalPost && "border-accent-400/20 bg-accent-400/[0.02] ring-1 ring-accent-400/10",
       )}
     >
-      <div className="flex gap-2 border-b border-white/[0.04] px-2.5 py-2 sm:px-3">
-        <Avatar name={author.displayName} avatar={author.avatar} size="xs" className="mt-px shrink-0" />
+      {isOriginalPost && (
+        <div className="border-b border-accent-400/10 bg-accent-400/[0.04] px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-accent-200">
+          Original post
+        </div>
+      )}
+      <div className="flex gap-2.5 border-b border-white/[0.04] px-3 py-2.5 sm:px-4">
+        <Avatar name={author.displayName} avatar={author.avatar} size="sm" className="mt-px shrink-0" />
         <div className="min-w-0 flex-1">
           {title && (
-            <h1 className="text-base font-semibold leading-snug tracking-tight text-white">{title}</h1>
+            <h1 className="text-lg font-semibold leading-snug tracking-tight text-white sm:text-xl">{title}</h1>
           )}
           <div
             className={cn(
               "flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] text-slate-500",
-              title && "mt-0.5",
+              title && "mt-1",
             )}
           >
-            <span className="font-medium text-slate-400">{author.displayName}</span>
+            <span className="font-medium text-slate-300">{author.displayName}</span>
             <RoleTag role={author.role} />
             {categoryName && (
               <>
                 <span aria-hidden>·</span>
-                <span>{categoryName}</span>
+                <Badge variant="neutral" className="px-1.5 py-0 text-[9px]">
+                  {categoryName}
+                </Badge>
               </>
             )}
             <span aria-hidden>·</span>
             <time dateTime={createdAt} title={formatDate(createdAt)}>
               {timeAgo(createdAt)}
             </time>
+            {edited && <span className="text-slate-600">(edited)</span>}
             {locked && (
               <Badge variant="warning" className="px-1 py-0 text-[9px]">
                 Locked
@@ -98,10 +109,10 @@ export function ForumPost({
         </div>
       </div>
 
-      <div className="px-2.5 py-2 sm:px-3">{editing ?? <ForumContent content={content} compact />}</div>
+      <div className="px-3 py-3 sm:px-4">{editing ?? <ForumContent content={content} compact />}</div>
 
       {actions && (
-        <div className="flex flex-wrap gap-px border-t border-white/[0.04] px-2 py-1 sm:px-3">
+        <div className="flex flex-wrap gap-px border-t border-white/[0.04] px-2 py-1.5 sm:px-3">
           {actions}
         </div>
       )}
@@ -112,22 +123,34 @@ export function ForumPost({
 interface ForumReplyProps {
   author: AuthorInfo;
   createdAt: string;
+  updatedAt?: string;
   content: string;
   removed?: boolean;
   actions?: ReactNode;
   editing?: ReactNode;
 }
 
-export function ForumReply({ author, createdAt, content, removed, actions, editing }: ForumReplyProps) {
+export function ForumReply({
+  author,
+  createdAt,
+  updatedAt,
+  content,
+  removed,
+  actions,
+  editing,
+}: ForumReplyProps) {
+  const edited = updatedAt != null && updatedAt !== createdAt;
+
   return (
-    <article className="flex gap-2 rounded-md border border-white/[0.04] bg-white/[0.008] px-2.5 py-2 sm:px-3">
+    <article className="flex gap-2.5 rounded-lg border border-white/[0.05] border-l-accent-400/20 bg-white/[0.008] px-3 py-2.5 sm:px-4 sm:pl-3">
       <Avatar name={author.displayName} avatar={author.avatar} size="xs" className="mt-px shrink-0" />
       <div className="min-w-0 flex-1">
-        <div className="mb-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] text-slate-500">
-          <span className="font-medium text-slate-400">{author.displayName}</span>
+        <div className="mb-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10px] text-slate-500">
+          <span className="font-medium text-slate-300">{author.displayName}</span>
           <RoleTag role={author.role} />
           <span aria-hidden>·</span>
           <time dateTime={createdAt}>{timeAgo(createdAt)}</time>
+          {edited && <span className="text-slate-600">(edited)</span>}
         </div>
         {removed ? (
           <p className="text-[11px] italic text-slate-500">[removed by a moderator]</p>
@@ -154,7 +177,7 @@ export function PostAction({
       type="button"
       onClick={onClick}
       className={cn(
-        "rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors",
+        "rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent-400/40",
         danger
           ? "text-slate-500 hover:bg-red-400/10 hover:text-red-300"
           : "text-slate-500 hover:bg-white/[0.04] hover:text-slate-300",
