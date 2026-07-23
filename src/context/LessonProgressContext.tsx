@@ -118,9 +118,13 @@ export function LessonProgressProvider({ children }: { children: ReactNode }) {
       ),
     ])
       .then(([lessonsRes, pathsRes]) => {
+        const lessonRows = Array.isArray(lessonsRes?.lessons) ? lessonsRes.lessons : [];
+        const pathRows = Array.isArray(pathsRes?.paths) ? pathsRes.paths : [];
+        if (lessonRows.length === 0 && pathRows.length === 0) return;
+
         setState((prev) => {
           const lessons = { ...prev.lessons };
-          for (const row of lessonsRes.lessons) {
+          for (const row of lessonRows) {
             if (row.completed && !lessons[row.lessonId]?.quizPassed) {
               lessons[row.lessonId] = {
                 completedAt: row.completedAt ?? new Date().toISOString(),
@@ -132,7 +136,7 @@ export function LessonProgressProvider({ children }: { children: ReactNode }) {
           }
 
           const paths = { ...prev.paths };
-          for (const row of pathsRes.paths) {
+          for (const row of pathRows) {
             if (!paths[row.pathId]) {
               paths[row.pathId] = {
                 completedAt: row.completedAt,

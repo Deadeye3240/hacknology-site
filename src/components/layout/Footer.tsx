@@ -11,10 +11,10 @@ export function Footer() {
     <footer className="mt-24 border-t border-white/5 bg-base-950">
       <div className="mx-auto grid w-full max-w-7xl grid-cols-2 gap-8 px-4 py-12 sm:px-6 md:grid-cols-4 lg:px-8">
         <div className="col-span-2 flex flex-col gap-4 md:col-span-2">
-          <Logo />
+          <Logo showDomain />
           <p className="max-w-sm text-sm leading-relaxed text-slate-400">
-            {site.tagline} A cybersecurity education platform focused on
-            authorized, defensive, and controlled training.
+            Learn cybersecurity by doing — structured lessons, terminal labs, ScanMe, sandbox
+            challenges, and a community built for real technical skill development.
           </p>
         </div>
 

@@ -44,8 +44,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const applySession = useCallback((res: MeResponse) => {
-    setUserState(res.user);
-    setCsrfToken(res.csrfToken);
+    setUserState(res.user ?? null);
+    setCsrfToken(res.csrfToken ?? null);
   }, []);
 
   const refresh = useCallback(async () => {
@@ -105,7 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       user,
       loading,
-      isAuthenticated: user !== null,
+      isAuthenticated: user != null,
       isModerator: user ? ROLE_RANK[user.role] >= ROLE_RANK.moderator : false,
       isAdmin: user ? user.role === "admin" : false,
       refresh,
