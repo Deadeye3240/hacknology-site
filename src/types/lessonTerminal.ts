@@ -46,6 +46,8 @@ export interface LessonTerminalScenario {
   banner?: string;
   /** Extra static or dynamic command output overrides */
   responses?: Record<string, string>;
+  /** Terminal chrome theme — lesson labs default to Kali. */
+  theme?: "kali" | "windows" | "default";
 }
 
 export interface LessonTerminalLab {

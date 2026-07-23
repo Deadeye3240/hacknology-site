@@ -1,9 +1,36 @@
 import type { VfsDir, VfsNode } from "@/types/lessonTerminal";
+import { KALI_ETC_FILES, KALI_HOME_VFS, KALI_VAR_LOG } from "./kaliHome";
+
+/** Resolve the simulated home directory for a session user. */
+export function getHomeDir(username: string, initialCwd?: string): string {
+  if (initialCwd?.startsWith("/Users/") || initialCwd?.startsWith("C:\\Users\\")) {
+    return initialCwd.replace(/\\/g, "/");
+  }
+  return `/home/${username}`;
+}
+
+/** Expand ~ and normalize Windows-style separators before path resolution. */
+export function expandUserPath(target: string, homeDir: string): string {
+  const normalized = target.replace(/\\/g, "/").trim();
+  if (!normalized || normalized === "~") return homeDir;
+  if (normalized.startsWith("~/")) {
+    const rest = normalized.slice(2);
+    return rest ? `${homeDir}/${rest}`.replace(/\/+/g, "/") : homeDir;
+  }
+  if (normalized.startsWith("~")) {
+    return normalized.slice(1).startsWith("/")
+      ? normalized.slice(1)
+      : `${homeDir}/${normalized.slice(1)}`.replace(/\/+/g, "/");
+  }
+  return normalized;
+}
 
 export function normalizePath(cwd: string, target: string): string | null {
-  let base = cwd;
+  let base = cwd.replace(/\\/g, "/");
   if (target.startsWith("/")) base = "/";
-  const parts = target.startsWith("/") ? target.split("/") : [...base.split("/"), ...target.split("/")];
+  const parts = target.startsWith("/")
+    ? target.split("/")
+    : [...base.split("/"), ...target.split("/")];
   const stack: string[] = [];
   for (const part of parts) {
     if (!part || part === ".") continue;
@@ -13,11 +40,18 @@ export function normalizePath(cwd: string, target: string): string | null {
     }
     stack.push(part);
   }
-  return "/" + stack.join("/");
+  return stack.length === 0 ? "/" : `/${stack.join("/")}`;
+}
+
+/** Resolve a user-supplied path against cwd and home (supports ~, absolute, and relative paths). */
+export function resolvePath(cwd: string, target: string, homeDir: string): string | null {
+  const expanded = expandUserPath(target, homeDir);
+  if (expanded.startsWith("/")) return normalizePath("/", expanded);
+  return normalizePath(cwd, expanded);
 }
 
 export function resolveNode(root: VfsDir, path: string): VfsNode | null {
-  const normalized = normalizePath("/", path);
+  const normalized = normalizePath("/", path.replace(/\\/g, "/"));
   if (!normalized || normalized === "/") return root;
   const segments = normalized.split("/").filter(Boolean);
   let node: VfsNode = root;
@@ -44,204 +78,182 @@ export function readFile(root: VfsDir, path: string): string | null {
   return node.content;
 }
 
-export const DEFAULT_LINUX_VFS: VfsDir = {
-  type: "dir",
-  children: {
-    home: {
-      type: "dir",
-      children: {
-        student: {
-          type: "dir",
-          children: {
-            ".bashrc": { type: "file", content: "# Hacknology training shell\nexport PS1='\\u@\\h:\\w\\$ '" },
-            "notes.txt": {
-              type: "file",
-              content: "Remember: only run commands you understand in authorized lab environments.",
-            },
-            "sample-alert.txt": {
-              type: "file",
-              content:
-                "ALERT: Multiple failed SSH logins from 203.0.113.44 against prod-web-01 (47 attempts / 10 min).\nSeverity: Medium\nAction: Review auth logs for successful logins from same IP.",
-            },
-          },
-        },
-      },
+const LINUX_ROOT_DIRS: VfsDir["children"] = {
+  bin: { type: "dir", children: {} },
+  boot: { type: "dir", children: {} },
+  dev: { type: "dir", children: {} },
+  etc: { type: "dir", children: {} },
+  home: { type: "dir", children: {} },
+  lib: { type: "dir", children: {} },
+  media: { type: "dir", children: {} },
+  mnt: { type: "dir", children: {} },
+  opt: { type: "dir", children: {} },
+  proc: { type: "dir", children: {} },
+  root: { type: "dir", children: {} },
+  run: { type: "dir", children: {} },
+  srv: { type: "dir", children: {} },
+  sys: { type: "dir", children: {} },
+  tmp: {
+    type: "dir",
+    children: {
+      ".X11-unix": { type: "dir", children: {} },
+      "scan-output.txt": { type: "file", content: "nmap scan results placeholder" },
     },
-    etc: {
-      type: "dir",
-      children: {
-        hostname: { type: "file", content: "hacknology-lab" },
-        passwd: {
-          type: "file",
-          content:
-            "root:x:0:0:root:/root:/bin/bash\nstudent:x:1000:1000:Student:/home/student:/bin/bash\nwww-data:x:33:33:www-data:/var/www:/usr/sbin/nologin",
-        },
-      },
-    },
-    var: {
-      type: "dir",
-      children: {
-        log: {
-          type: "dir",
-          children: {
-            "auth.log": {
-              type: "file",
-              content:
-                "Jan 10 12:00:01 sshd[1204]: Accepted publickey for student from 10.0.0.5 port 52234\nJan 10 12:04:11 sudo: student : TTY=pts/0 ; PWD=/home/student ; USER=root ; COMMAND=/bin/ls",
-            },
-            syslog: { type: "file", content: "Jan 10 12:00:00 hacknology-lab systemd[1]: Started Session 42." },
-          },
-        },
-      },
-    },
-    tmp: { type: "dir", children: {} },
   },
-};
-
-export const DEFAULT_NETWORK_VFS: VfsDir = {
-  type: "dir",
-  children: {
-    home: {
-      type: "dir",
-      children: {
-        student: { type: "dir", children: {
-          "research-notes.txt": {
-            type: "file",
-            content:
-              "site:hacknology.xyz filetype:pdf\nsite:hacknology.xyz inurl:admin\nintitle:\"index of\" hacknology\nwhois hacknology.xyz\ndig hacknology.xyz MX",
+  usr: {
+    type: "dir",
+    children: {
+      bin: { type: "dir", children: {} },
+      local: { type: "dir", children: {} },
+      share: {
+        type: "dir",
+        children: {
+          wordlists: {
+            type: "dir",
+            children: {
+              "rockyou.txt": { type: "file", content: "[truncated wordlist — use ~/Downloads/wordlists/common.txt in labs]" },
+            },
           },
-        } },
-      },
-    },
-    etc: {
-      type: "dir",
-      children: {
-        hosts: { type: "file", content: "127.0.0.1 localhost\n10.10.10.25 training-target" },
-        resolv: { type: "file", content: "nameserver 1.1.1.1\nsearch hacknology.lab" },
-        "resolv.conf": { type: "file", content: "nameserver 1.1.1.1\nsearch hacknology.lab" },
+        },
       },
     },
   },
+  var: { type: "dir", children: {} },
 };
 
-export const WEB_VFS: VfsDir = {
-  type: "dir",
-  children: {
-    home: {
-      type: "dir",
-      children: {
-        student: {
-          type: "dir",
-          children: {
-            "requests.txt": {
-              type: "file",
-              content: "GET /login HTTP/1.1\nHost: app.hacknology.lab\nCookie: session=abc123",
-            },
-          },
+function mergeDirs(a: VfsDir, b: VfsDir): VfsDir {
+  if (a.type !== "dir" || b.type !== "dir") return b;
+  const children = { ...a.children };
+  for (const [key, node] of Object.entries(b.children)) {
+    if (children[key]?.type === "dir" && node.type === "dir") {
+      children[key] = mergeDirs(children[key], node);
+    } else {
+      children[key] = node;
+    }
+  }
+  return { type: "dir", children };
+}
+
+function mergeRoot(extra: VfsDir["children"]): VfsDir["children"] {
+  const merged: VfsDir["children"] = { ...LINUX_ROOT_DIRS };
+  for (const [key, node] of Object.entries(extra)) {
+    if (merged[key]?.type === "dir" && node.type === "dir") {
+      merged[key] = mergeDirs(merged[key], node);
+    } else {
+      merged[key] = node;
+    }
+  }
+  return merged;
+}
+
+function kaliHome(extra: VfsDir["children"] = {}): VfsDir {
+  return mergeDirs(KALI_HOME_VFS, { type: "dir", children: extra });
+}
+
+function linuxVfs(homeExtras: VfsDir["children"] = {}, varLogExtras: VfsDir["children"] = {}): VfsDir {
+  return {
+    type: "dir",
+    children: mergeRoot({
+      home: {
+        type: "dir",
+        children: {
+          kali: kaliHome(homeExtras),
         },
       },
-    },
-    var: {
-      type: "dir",
-      children: {
-        www: {
-          type: "dir",
-          children: {
-            html: {
-              type: "dir",
-              children: {
-                index: {
-                  type: "file",
-                  content: "<html><body><h1>Training App</h1></body></html>",
+      etc: { type: "dir", children: KALI_ETC_FILES },
+      var: {
+        type: "dir",
+        children: {
+          log: { type: "dir", children: { ...KALI_VAR_LOG, ...varLogExtras } },
+          www: {
+            type: "dir",
+            children: {
+              html: {
+                type: "dir",
+                children: {
+                  index: { type: "file", content: "<html><body><h1>Kali training target</h1></body></html>" },
                 },
-                "robots.txt": { type: "file", content: "User-agent: *\nDisallow: /admin" },
               },
             },
           },
         },
-        log: {
-          type: "dir",
-          children: {
-            "access.log": {
-              type: "file",
-              content:
-                '10.0.0.5 - - [10/Jan/2026:12:00:01 +0000] "GET /login HTTP/1.1" 200 512\n10.0.0.5 - - [10/Jan/2026:12:00:02 +0000] "POST /login HTTP/1.1" 401 128\n10.0.0.9 - - [10/Jan/2026:12:05:00 +0000] "POST /login?user=admin\' OR \'1\'=\'1 HTTP/1.1" 500 64',
-            },
-          },
+      },
+      opt: {
+        type: "dir",
+        children: {
+          tools: { type: "dir", children: { readme: { type: "file", content: "Optional lab tools directory" } } },
         },
       },
+    }),
+  };
+}
+
+export const DEFAULT_LINUX_VFS = linuxVfs();
+
+export const DEFAULT_NETWORK_VFS = linuxVfs({
+  "research-notes.txt": {
+    type: "file",
+    content:
+      "site:hacknology.xyz filetype:pdf\nsite:hacknology.xyz inurl:admin\nintitle:\"index of\" hacknology\nwhois hacknology.xyz\ndig hacknology.xyz MX",
+  },
+});
+
+export const WEB_VFS = linuxVfs(
+  {
+    "requests.txt": {
+      type: "file",
+      content: "GET /login HTTP/1.1\nHost: app.hacknology.lab\nCookie: session=abc123",
     },
   },
-};
-
-export const SOC_VFS: VfsDir = {
-  type: "dir",
-  children: {
-    home: {
+  {
+    www: {
       type: "dir",
       children: {
-        analyst: {
+        html: {
           type: "dir",
           children: {
-            "alert.txt": {
-              type: "file",
-              content: "ALERT: Brute force SSH from 203.0.113.44 — 47 failures in 10 minutes",
-            },
-            "incident-template.txt": {
-              type: "file",
-              content:
-                "INCIDENT TICKET (draft)\nStatus: Investigating\nSummary:\nAffected assets:\nTimeline (UTC):\nIOCs observed:\nActions taken:\nNext steps:",
-            },
+            index: { type: "file", content: "<html><body><h1>Training App</h1></body></html>" },
+            "robots.txt": { type: "file", content: "User-agent: *\nDisallow: /admin" },
           },
         },
       },
     },
-    var: {
-      type: "dir",
-      children: {
-        log: {
-          type: "dir",
-          children: {
-            "auth.log": {
-              type: "file",
-              content:
-                "Jan 10 12:00:01 sshd[1204]: Failed password for invalid user admin from 203.0.113.44 port 52234\nJan 10 12:00:02 sshd[1204]: Failed password for invalid user root from 203.0.113.44 port 52234\nJan 10 12:00:03 sshd[1204]: Failed password for student from 203.0.113.44 port 52234\nJan 10 12:04:11 sshd[1204]: Accepted publickey for student from 10.0.0.5 port 52234",
-            },
-            "syslog": {
-              type: "file",
-              content: "Jan 10 12:00:00 hacknology-lab systemd[1]: Started Session 42.",
-            },
-          },
-        },
-      },
+    "access.log": {
+      type: "file",
+      content:
+        '10.0.0.5 - - [10/Jan/2026:12:00:01 +0000] "GET /login HTTP/1.1" 200 512\n10.0.0.5 - - [10/Jan/2026:12:00:02 +0000] "POST /login HTTP/1.1" 401 128\n10.0.0.9 - - [10/Jan/2026:12:05:00 +0000] "POST /login?user=admin\' OR \'1\'=\'1 HTTP/1.1" 500 64',
     },
   },
-};
+);
 
-export const FORENSICS_VFS: VfsDir = {
+export const SOC_VFS = linuxVfs({
+  "alert.txt": {
+    type: "file",
+    content: "ALERT: Brute force SSH from 203.0.113.44 — 47 failures in 10 minutes",
+  },
+  "incident-template.txt": {
+    type: "file",
+    content:
+      "INCIDENT TICKET (draft)\nStatus: Investigating\nSummary:\nAffected assets:\nTimeline (UTC):\nIOCs observed:\nActions taken:\nNext steps:",
+  },
+});
+
+export const FORENSICS_VFS: VfsDir = mergeDirs(linuxVfs({
+  "case-notes.txt": {
+    type: "file",
+    content: "Case 2026-014: Suspect downloaded archive at 11:58 UTC. Preserve metadata.",
+  },
+}), {
   type: "dir",
   children: {
-    home: {
-      type: "dir",
-      children: {
-        investigator: {
-          type: "dir",
-          children: {
-            "case-notes.txt": {
-              type: "file",
-              content: "Case 2026-014: Suspect downloaded archive at 11:58 UTC. Preserve metadata.",
-            },
-          },
-        },
-      },
-    },
     evidence: {
       type: "dir",
       children: {
         "disk-image.dd": { type: "file", content: "[binary evidence — do not modify in place]" },
         "browser-history.csv": {
           type: "file",
-          content: "timestamp,url\n2026-01-10T11:58:00Z,https://example.com/download\n2026-01-10T11:59:00Z,https://malware-drop.example",
+          content:
+            "timestamp,url\n2026-01-10T11:58:00Z,https://example.com/download\n2026-01-10T11:59:00Z,https://malware-drop.example",
         },
         "file-metadata.txt": {
           type: "file",
@@ -249,22 +261,8 @@ export const FORENSICS_VFS: VfsDir = {
         },
       },
     },
-    var: {
-      type: "dir",
-      children: {
-        log: {
-          type: "dir",
-          children: {
-            "auth.log": {
-              type: "file",
-              content: "Jan 10 11:58:01 sudo: investigator : TTY=pts/0 ; COMMAND=/bin/cp evidence/report.pdf /tmp/",
-            },
-          },
-        },
-      },
-    },
   },
-};
+});
 
 export const WINDOWS_VFS: VfsDir = {
   type: "dir",

@@ -2,9 +2,11 @@ import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { HacknologyTerminal, useTerminalHistory } from "@/components/terminal/HacknologyTerminal";
+import { ScanMeHintPanel } from "@/components/scanme/ScanMeHintPanel";
 import type { Lesson } from "@/types/education";
 import type { TerminalLine } from "@/types/lessonTerminal";
 import { resolveLessonTerminal } from "@/data/lessons/terminals";
+import { kaliMotdLines } from "@/lib/lessonTerminal/kali";
 import {
   createInitialState,
   executeCommand,
@@ -16,31 +18,46 @@ interface LessonTerminalLabProps {
   lesson: Lesson;
 }
 
+function motdLines(): TerminalLine[] {
+  return kaliMotdLines().map((text) => ({ type: "output" as const, text }));
+}
+
 export function LessonTerminalLab({ lesson }: LessonTerminalLabProps) {
   const lab = useMemo(() => resolveLessonTerminal(lesson), [lesson]);
   const [sessionState, setSessionState] = useState(() => createInitialState(lab.scenario));
   const [stepIndex, setStepIndex] = useState(0);
   const [hintsUsed, setHintsUsed] = useState(0);
   const [input, setInput] = useState("");
-  const { push, handleKeyDown, resetHistory } = useTerminalHistory();
+  const [stepFeedback, setStepFeedback] = useState<{ kind: "error" | "success"; text: string } | null>(
+    null,
+  );
+  const { history, push, handleKeyDown, resetHistory } = useTerminalHistory();
 
   const currentStep = lab.steps[stepIndex];
   const allComplete = stepIndex >= lab.steps.length;
   const prompt = getPrompt(sessionState, lab.scenario);
+  const theme = lab.scenario.theme ?? "kali";
 
-  const [lines, setLines] = useState<TerminalLine[]>(() => {
-    const intro: TerminalLine[] = [];
-    if (lab.scenario.banner) intro.push({ type: "system", text: lab.scenario.banner });
-    intro.push({
-      type: "system",
-      text: `Lesson lab: ${lab.title ?? lesson.title} — Step 1 of ${lab.steps.length}`,
-    });
-    intro.push({ type: "system", text: currentStep?.objective ?? "" });
-    return intro;
-  });
+  const [lines, setLines] = useState<TerminalLine[]>(() => motdLines());
 
   function append(newLines: TerminalLine[]) {
     setLines((prev) => [...prev, ...newLines]);
+  }
+
+  function appendCommandOutput(exec: ReturnType<typeof executeCommand>) {
+    if (exec.output === "__CLEAR__") {
+      setLines(motdLines());
+      return;
+    }
+
+    const outputLines: TerminalLine[] = [];
+    if (exec.error) {
+      outputLines.push({ type: "error", text: exec.error });
+    } else if (exec.output) {
+      outputLines.push({ type: "output", text: exec.output });
+    }
+
+    if (outputLines.length > 0) append(outputLines);
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -52,78 +69,47 @@ export function LessonTerminalLab({ lesson }: LessonTerminalLabProps) {
     push(cmd);
     setInput("");
 
-    const exec = executeCommand(cmd, sessionState, lab.scenario);
+    setStepFeedback(null);
+
+    const exec = executeCommand(cmd, sessionState, lab.scenario, [...history, cmd]);
     setSessionState(exec.state);
-
-    if (exec.output === "__CLEAR__") {
-      setLines([
-        { type: "system", text: "Terminal cleared." },
-        { type: "system", text: `Step ${stepIndex + 1}: ${currentStep.objective}` },
-      ]);
-      return;
-    }
-
-    const outputLines: TerminalLine[] = [];
-
-    if (exec.error) {
-      outputLines.push({ type: "error", text: exec.error });
-      append(outputLines);
-      return;
-    }
-
-    if (exec.output) {
-      outputLines.push({ type: "output", text: exec.output });
-    }
+    appendCommandOutput(exec);
 
     const validation = validateStep(cmd, currentStep, exec.state);
 
     if (validation.ok && validation.advance) {
-      outputLines.push({ type: "success", text: `✓ ${validation.message}` });
-      append(outputLines);
-
+      setStepFeedback({
+        kind: "success",
+        text: validation.message ?? "Step complete — continue to the next objective.",
+      });
       const nextIndex = stepIndex + 1;
+      setStepIndex(nextIndex);
       if (nextIndex >= lab.steps.length) {
-        append([
-          {
-            type: "success",
-            text: "✓ Hands-on lab complete — continue to the knowledge check below.",
-          },
-        ]);
-        setStepIndex(nextIndex);
-      } else {
-        setStepIndex(nextIndex);
-        append([
-          {
-            type: "system",
-            text: `Step ${nextIndex + 1} of ${lab.steps.length}: ${lab.steps[nextIndex].objective}`,
-          },
-        ]);
+        setStepFeedback({
+          kind: "success",
+          text: "Hands-on lab complete — continue to the knowledge check below.",
+        });
       }
       return;
     }
 
     if (!validation.ok) {
-      outputLines.push({ type: "error", text: validation.message });
+      setStepFeedback({ kind: "error", text: validation.message });
     }
-
-    append(outputLines);
   }
 
   function resetLab() {
     setSessionState(createInitialState(lab.scenario));
     setStepIndex(0);
     setHintsUsed(0);
+    setStepFeedback(null);
     resetHistory();
     setInput("");
-    setLines([
-      ...(lab.scenario.banner ? [{ type: "system" as const, text: lab.scenario.banner }] : []),
-      { type: "system", text: `Lab reset — Step 1 of ${lab.steps.length}` },
-      { type: "system", text: lab.steps[0].objective },
-    ]);
+    setLines(motdLines());
   }
 
   function clearScreen() {
-    setLines([{ type: "system", text: `Step ${Math.min(stepIndex + 1, lab.steps.length)}: ${currentStep?.objective ?? "Complete"}` }]);
+    setLines(motdLines());
   }
 
   const hints = currentStep?.hints ?? [];
@@ -134,7 +120,8 @@ export function LessonTerminalLab({ lesson }: LessonTerminalLabProps) {
         <div>
           <h2 className="text-base font-semibold text-white">{lab.title ?? "Hands-on terminal"}</h2>
           <p className="mt-0.5 text-xs leading-snug text-slate-400">
-            {lab.introduction ?? "Sandboxed training shell — commands are simulated, not executed on a real server."}
+            {lab.introduction ??
+              "Sandboxed Kali training shell — commands are simulated. Objectives and hints appear below the terminal chrome."}
           </p>
         </div>
         <div className="flex flex-wrap gap-1.5">
@@ -160,25 +147,45 @@ export function LessonTerminalLab({ lesson }: LessonTerminalLabProps) {
               {currentStep.why}
             </p>
           )}
+          {stepFeedback && (
+            <p
+              className={
+                stepFeedback.kind === "success"
+                  ? "rounded-md border border-emerald-500/25 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-200"
+                  : "rounded-md border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-xs text-amber-100"
+              }
+            >
+              {stepFeedback.kind === "success" ? "✓ " : "↻ "}
+              {stepFeedback.text}
+            </p>
+          )}
         </div>
+      )}
+
+      {allComplete && stepFeedback && (
+        <p className="rounded-md border border-emerald-500/25 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-200">
+          ✓ {stepFeedback.text}
+        </p>
       )}
 
       <HacknologyTerminal
         prompt={prompt}
-        windowTitle="hacknology-lesson-terminal"
+        theme={theme}
         lines={lines}
         input={input}
         onInputChange={setInput}
         onSubmit={handleSubmit}
         onKeyDown={(e) => handleKeyDown(e, input, setInput)}
         disabled={allComplete}
-        placeholder="Enter command…"
-        hints={hints}
-        onHintCountChange={setHintsUsed}
+        placeholder=""
+        showHints={false}
         onClear={clearScreen}
         onReset={resetLab}
-        showHints={!allComplete}
       />
+
+      {!allComplete && hints.length > 0 && (
+        <ScanMeHintPanel hints={hints} onHintCountChange={setHintsUsed} />
+      )}
 
       {hintsUsed > 0 && !allComplete && (
         <p className="text-[10px] text-slate-600">Hints used: {hintsUsed}</p>

@@ -203,7 +203,7 @@ export const fundamentalsTerminals = {
   "fundamentals-hashing": lab(
     "Hashing concepts lab",
     "View file metadata with a hash value — hashes verify integrity without decrypting content.",
-    { ...FORENSICS_SCENARIO, initialCwd: "/home/investigator" },
+    { ...FORENSICS_SCENARIO },
     [
       step("cd-evidence", "Navigate to /evidence where preserved files are stored.",
         [h("Command", "cd /evidence")], [cmd("cd /evidence")]),

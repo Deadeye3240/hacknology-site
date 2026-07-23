@@ -13,6 +13,7 @@ import {
   WEB_VFS,
   WINDOWS_VFS,
 } from "@/lib/lessonTerminal/vfs";
+import { KALI_HOME, KALI_HOST, KALI_USER } from "@/lib/lessonTerminal/kali";
 
 export const h = (label: string, text: string): LessonTerminalHint => ({ label, text });
 
@@ -94,44 +95,36 @@ export function lab(
   };
 }
 
-export const LINUX_SCENARIO: LessonTerminalScenario = {
-  username: "student",
-  hostname: "hacknology-lab",
-  initialCwd: "/home/student",
+export const KALI_SCENARIO: LessonTerminalScenario = {
+  username: KALI_USER,
+  hostname: KALI_HOST,
+  initialCwd: KALI_HOME,
   filesystem: DEFAULT_LINUX_VFS,
-  banner: "Linux lab — simulated shell, authorized training only.",
+  theme: "kali",
+};
+
+export const LINUX_SCENARIO: LessonTerminalScenario = {
+  ...KALI_SCENARIO,
 };
 
 export const NETWORK_SCENARIO: LessonTerminalScenario = {
-  username: "student",
-  hostname: "hacknology-lab",
-  initialCwd: "/home/student",
+  ...KALI_SCENARIO,
   filesystem: DEFAULT_NETWORK_VFS,
-  banner: "Network lab — responses are simulated for learning.",
 };
 
 export const WEB_SCENARIO: LessonTerminalScenario = {
-  username: "student",
-  hostname: "web-lab",
-  initialCwd: "/home/student",
+  ...KALI_SCENARIO,
   filesystem: WEB_VFS,
-  banner: "Web security lab — inspect headers, logs, and paths safely.",
 };
 
 export const SOC_SCENARIO: LessonTerminalScenario = {
-  username: "analyst",
-  hostname: "soc-console",
-  initialCwd: "/home/analyst",
+  ...KALI_SCENARIO,
   filesystem: SOC_VFS,
-  banner: "SOC triage lab — correlate alerts with log evidence.",
 };
 
 export const FORENSICS_SCENARIO: LessonTerminalScenario = {
-  username: "investigator",
-  hostname: "forensics-lab",
-  initialCwd: "/home/investigator",
+  ...KALI_SCENARIO,
   filesystem: FORENSICS_VFS,
-  banner: "Forensics lab — preserve chain of custody; read-only investigation.",
 };
 
 export const WINDOWS_SCENARIO: LessonTerminalScenario = {
@@ -140,10 +133,9 @@ export const WINDOWS_SCENARIO: LessonTerminalScenario = {
   initialCwd: "/Users/student",
   prompt: "PS C:\\Users\\student>",
   filesystem: WINDOWS_VFS,
-  banner: "Windows lab — PowerShell-style commands, simulated environment.",
+  theme: "windows",
 };
 
 export const FUNDAMENTALS_SCENARIO: LessonTerminalScenario = {
-  ...LINUX_SCENARIO,
-  banner: "Security fundamentals lab — connect concepts to analyst workflows.",
+  ...KALI_SCENARIO,
 };

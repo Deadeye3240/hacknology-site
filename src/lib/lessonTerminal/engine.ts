@@ -11,12 +11,15 @@ import {
   SOC_VFS,
   WEB_VFS,
   WINDOWS_VFS,
+  getHomeDir,
   listDirectory,
-  normalizePath,
   readFile,
   resolveNode,
+  resolvePath,
 } from "./vfs";
 import type { VfsDir, VfsNode } from "@/types/lessonTerminal";
+import { commandNotFoundMessage, KALI_HOME, KALI_HOST, KALI_USER } from "./kali";
+import { tryExtendedCommand } from "./extendedCommands";
 
 export interface CommandResult {
   output: string;
@@ -40,17 +43,23 @@ function getFs(scenario: LessonTerminalScenario): VfsDir {
 
 function promptFor(state: TerminalSessionState, scenario: LessonTerminalScenario): string {
   if (scenario.prompt) return scenario.prompt;
-  const shortCwd = state.cwd === `/home/${state.username}` ? "~" : state.cwd;
+  const homeDir = getHomeDir(state.username, scenario.initialCwd);
+  const shortCwd =
+    state.cwd === homeDir
+      ? "~"
+      : state.cwd.startsWith(`${homeDir}/`)
+        ? `~${state.cwd.slice(homeDir.length)}`
+        : state.cwd;
   return `${state.username}@${state.hostname}:${shortCwd}$`;
 }
 
 export function createInitialState(scenario: LessonTerminalScenario): TerminalSessionState {
-  const username = scenario.username ?? "student";
-  const hostname = scenario.hostname ?? "hacknology-lab";
+  const username = scenario.username ?? KALI_USER;
+  const hostname = scenario.hostname ?? KALI_HOST;
   return {
     username,
     hostname,
-    cwd: scenario.initialCwd ?? `/home/${username}`,
+    cwd: scenario.initialCwd ?? KALI_HOME,
   };
 }
 
@@ -58,9 +67,32 @@ export function getPrompt(state: TerminalSessionState, scenario: LessonTerminalS
   return promptFor(state, scenario);
 }
 
-function parseArgs(input: string): { cmd: string; args: string[] } {
+function stripQuotes(value: string): string {
+  return value.replace(/^['"]|['"]$/g, "");
+}
+
+function parseArgs(input: string): { cmd: string; args: string[]; rawCmd: string } {
   const parts = input.trim().split(/\s+/);
-  return { cmd: (parts[0] ?? "").toLowerCase(), args: parts.slice(1) };
+  const rawCmd = parts[0] ?? "";
+  const cmd = rawCmd.toLowerCase();
+  const args = parts.slice(1).map(stripQuotes);
+  return { cmd, args, rawCmd };
+}
+
+function homeFor(state: TerminalSessionState, scenario: LessonTerminalScenario): string {
+  return getHomeDir(state.username, scenario.initialCwd);
+}
+
+function expandEcho(text: string, state: TerminalSessionState, homeDir: string): string {
+  return text
+    .replace(/\$HOME|\$\{HOME\}/g, homeDir)
+    .replace(/\$USER|\$\{USER\}/g, state.username)
+    .replace(/\$PWD|\$\{PWD\}/g, state.cwd)
+    .replace(/\$SHELL|\$\{SHELL\}/g, "/bin/bash");
+}
+
+function pathError(kind: string, target: string): string {
+  return `${kind}: ${target}: No such file or directory`;
 }
 
 function readLines(root: VfsDir, path: string): string[] | null {
@@ -69,42 +101,42 @@ function readLines(root: VfsDir, path: string): string[] | null {
   return content.split("\n");
 }
 
-function resolveFilePath(cwd: string, target: string): string | null {
+function resolveFilePath(cwd: string, target: string, homeDir: string): string | null {
   if (!target) return null;
-  return target.startsWith("/") ? target : normalizePath(cwd, target);
+  return resolvePath(cwd, target, homeDir);
 }
 
-function grepOutput(root: VfsDir, cwd: string, args: string[]): string {
+function grepOutput(root: VfsDir, cwd: string, args: string[], homeDir: string): string {
   const pattern = args.find((a) => !a.startsWith("-"));
   const fileArg = args.filter((a) => !a.startsWith("-")).slice(1)[0];
   if (!pattern) return "grep: missing pattern";
-  const path = fileArg ? resolveFilePath(cwd, fileArg) : null;
+  const path = fileArg ? resolveFilePath(cwd, fileArg, homeDir) : resolveFilePath(cwd, ".", homeDir);
   if (!path) return "grep: missing file operand";
   const lines = readLines(root, path);
-  if (lines === null) return `grep: ${fileArg}: No such file or directory`;
+  if (lines === null) return pathError("grep", fileArg ?? ".");
   const re = new RegExp(pattern, "i");
   const matches = lines.filter((line) => re.test(line));
   return matches.length ? matches.join("\n") : "";
 }
 
-function headTail(root: VfsDir, cwd: string, args: string[], tail: boolean): string {
+function headTail(root: VfsDir, cwd: string, args: string[], tail: boolean, homeDir: string): string {
   const fileArg = args.find((a) => !a.startsWith("-"));
   if (!fileArg) return `${tail ? "tail" : "head"}: missing file operand`;
-  const path = resolveFilePath(cwd, fileArg);
+  const path = resolveFilePath(cwd, fileArg, homeDir);
   if (!path) return `${tail ? "tail" : "head"}: ${fileArg}: No such file`;
   const lines = readLines(root, path);
-  if (lines === null) return `${tail ? "tail" : "head"}: ${fileArg}: No such file or directory`;
+  if (lines === null) return pathError(tail ? "tail" : "head", fileArg);
   const countArg = args.find((a) => a.startsWith("-"))?.replace(/\D/g, "");
   const count = countArg ? Number.parseInt(countArg, 10) : 10;
   const slice = tail ? lines.slice(-count) : lines.slice(0, count);
   return slice.join("\n");
 }
 
-function findOutput(root: VfsDir, cwd: string, args: string[]): string {
+function findOutput(root: VfsDir, cwd: string, args: string[], homeDir: string): string {
   const startIdx = args.indexOf("-name");
   const namePattern = startIdx >= 0 ? args[startIdx + 1]?.replace(/"/g, "") : undefined;
   const startPath = args.find((a, i) => !a.startsWith("-") && i < startIdx) ?? cwd;
-  const base = startPath.startsWith("/") ? startPath : normalizePath(cwd, startPath) ?? cwd;
+  const base = resolvePath(cwd, startPath, homeDir) ?? cwd;
   const results: string[] = [];
   function walk(path: string, node: VfsNode) {
     if (node.type === "file") {
@@ -162,11 +194,17 @@ function nmapOutput(args: string[]): string {
   );
 }
 
-function lsOutput(root: VfsDir, cwd: string, args: string[]): string {
+function lsOutput(
+  root: VfsDir,
+  cwd: string,
+  args: string[],
+  homeDir: string,
+  owner: string,
+): string {
   const showAll = args.includes("-a") || args.some((a) => a.includes("a"));
   const long = args.includes("-l") || args.some((a) => a.includes("l"));
-  const target = args.find((a) => !a.startsWith("-")) ?? cwd;
-  const path = target.startsWith("/") ? target : normalizePath(cwd, target) ?? cwd;
+  const target = args.find((a) => !a.startsWith("-")) ?? ".";
+  const path = resolvePath(cwd, target, homeDir) ?? cwd;
   const names = listDirectory(root, path, showAll);
   if (names.length === 0) {
     const node = resolveNode(root, path);
@@ -179,7 +217,7 @@ function lsOutput(root: VfsDir, cwd: string, args: string[]): string {
         const full = path === "/" ? `/${n}` : `${path}/${n}`;
         const node = resolveNode(root, full);
         const kind = node?.type === "dir" ? "d" : "-";
-        return `${kind}rw-r--r-- 1 student student 4096 Jan 10 12:00 ${n}`;
+        return `${kind}rw-r--r-- 1 ${owner} ${owner} 4096 Jan 10 12:00 ${n}`;
       })
       .join("\n");
   }
@@ -190,10 +228,13 @@ function handleBuiltin(
   input: string,
   state: TerminalSessionState,
   scenario: LessonTerminalScenario,
+  history: string[] = [],
 ): CommandResult {
   const root = getFs(scenario);
-  const { cmd, args } = parseArgs(input);
+  const { cmd, args, rawCmd } = parseArgs(input);
   const key = normalizeCmd(input);
+  const homeDir = homeFor(state, scenario);
+  const isWindows = homeDir.startsWith("/Users/");
 
   if (scenario.responses?.[key]) {
     return { output: scenario.responses[key], state };
@@ -204,68 +245,103 @@ function handleBuiltin(
       return { output: state.cwd, state };
 
     case "whoami":
-      return { output: state.username, state };
+      return {
+        output: isWindows ? `${state.hostname.toLowerCase()}\\${state.username}` : state.username,
+        state,
+      };
+
+    case "id":
+      return {
+        output: `uid=1000(${state.username}) gid=1000(${state.username}) groups=1000(${state.username})`,
+        state,
+      };
+
+    case "hostname":
+      return { output: state.hostname, state };
+
+    case "uname":
+      return {
+        output:
+          args.includes("-a") || args.length === 0
+            ? `Linux ${state.hostname} 6.6.9-kali1-amd64 #1 SMP PREEMPT_DYNAMIC Kali 6.6.9-1kali1 (2024-07-15) x86_64 GNU/Linux`
+            : "Linux",
+        state,
+      };
+
+    case "date":
+      return { output: new Date().toUTCString(), state };
 
     case "echo":
-      return { output: args.join(" "), state };
+      return { output: expandEcho(args.join(" "), state, homeDir), state };
 
     case "clear":
+    case "cls":
       return { output: "__CLEAR__", state };
 
     case "help":
       return {
         output:
-          "Built-in lab commands: pwd, cd, ls, cat, echo, whoami, clear, help, grep, head, tail, find, env\n" +
-          "Network tools (simulated): ping, ip, ifconfig, ss, netstat, dig, whois, host, nslookup, nmap, curl\n" +
-          "Windows-style: type, dir, Get-Content",
+          "GNU bash, version 5.2.21(1)-release (x86_64-pc-linux-gnu)\n" +
+          "These shell commands are defined internally.  Type `help' to see this list.\n" +
+          "Use `man COMMAND' for more information on external commands.",
         state,
       };
 
     case "cd": {
-      const target = args[0] ?? `/home/${state.username}`;
-      const next = normalizePath(state.cwd, target);
+      const target = args[0] ?? homeDir;
+      const next = resolvePath(state.cwd, target, homeDir);
       if (!next) return { output: "", error: `cd: ${target}: Invalid path`, state };
       const node = resolveNode(root, next);
       if (!node || node.type !== "dir") {
-        return { output: "", error: `cd: ${target}: No such file or directory`, state };
+        return { output: "", error: pathError("cd", target), state };
       }
       return { output: "", state: { ...state, cwd: next } };
     }
 
     case "ls":
-      return { output: lsOutput(root, state.cwd, args), state };
+    case "ll":
+      return {
+        output: lsOutput(
+          root,
+          state.cwd,
+          cmd === "ll" ? ["-la", ...args] : args,
+          homeDir,
+          state.username,
+        ),
+        state,
+      };
 
     case "cat":
     case "type":
     case "get-content": {
       const target = args[0];
-      if (!target) return { output: "", error: `${cmd}: missing file operand`, state };
-      const path = target.startsWith("/") ? target : normalizePath(state.cwd, target);
-      if (!path) return { output: "", error: `${cmd}: ${target}: No such file`, state };
+      if (!target) return { output: "", error: `${rawCmd}: missing file operand`, state };
+      const path = resolvePath(state.cwd, target, homeDir);
+      if (!path) return { output: "", error: `${rawCmd}: ${target}: No such file`, state };
       const content = readFile(root, path);
       if (content === null) {
         const node = resolveNode(root, path);
-        if (node?.type === "dir") return { output: "", error: `${cmd}: ${target}: Is a directory`, state };
-        return { output: "", error: `${cmd}: ${target}: No such file or directory`, state };
+        if (node?.type === "dir") return { output: "", error: `${rawCmd}: ${target}: Is a directory`, state };
+        return { output: "", error: pathError(rawCmd, target), state };
       }
       return { output: content, state };
     }
 
     case "grep":
-      return { output: grepOutput(root, state.cwd, args), state };
+      return { output: grepOutput(root, state.cwd, args, homeDir), state };
 
     case "head":
-      return { output: headTail(root, state.cwd, args, false), state };
+      return { output: headTail(root, state.cwd, args, false, homeDir), state };
 
     case "tail":
-      return { output: headTail(root, state.cwd, args, true), state };
+      return { output: headTail(root, state.cwd, args, true, homeDir), state };
 
     case "find":
-      return { output: findOutput(root, state.cwd, args), state };
+      return { output: findOutput(root, state.cwd, args, homeDir), state };
 
     case "env":
       return {
-        output: `USER=${state.username}\nHOME=/home/${state.username}\nSHELL=/bin/bash\nPWD=${state.cwd}`,
+        output: `USER=${state.username}\nHOME=${homeDir}\nSHELL=/bin/bash\nPWD=${state.cwd}\nPATH=/usr/local/bin:/usr/bin:/bin`,
         state,
       };
 
@@ -292,7 +368,7 @@ function handleBuiltin(
     }
 
     case "dir":
-      return { output: lsOutput(root, state.cwd, args), state };
+      return { output: lsOutput(root, state.cwd, args, homeDir, state.username), state };
 
     case "ping": {
       const host = args.find((a) => !a.startsWith("-")) ?? "127.0.0.1";
@@ -355,12 +431,22 @@ function handleBuiltin(
     case "nmap":
       return { output: nmapOutput(args), state };
 
-    default:
+    default: {
+      const extended = tryExtendedCommand(cmd, {
+        root,
+        state,
+        homeDir,
+        args,
+        rawCmd,
+        history,
+      });
+      if (extended) return extended;
       return {
         output: "",
-        error: `${cmd}: command not found (simulated lab shell)`,
+        error: commandNotFoundMessage(rawCmd),
         state,
       };
+    }
   }
 }
 
@@ -368,10 +454,11 @@ export function executeCommand(
   input: string,
   state: TerminalSessionState,
   scenario: LessonTerminalScenario,
+  history: string[] = [],
 ): CommandResult {
   const trimmed = input.trim();
   if (!trimmed) return { output: "", state };
-  return handleBuiltin(trimmed, state, scenario);
+  return handleBuiltin(trimmed, state, scenario, history);
 }
 
 function matchRule(
@@ -438,34 +525,38 @@ export function validateStep(
 export function defaultScenarioForPath(pathId: string): LessonTerminalScenario {
   if (pathId === "networking" || pathId === "nmap" || pathId === "osint") {
     return {
-      username: "student",
-      hostname: "hacknology-lab",
-      initialCwd: "/home/student",
+      username: KALI_USER,
+      hostname: KALI_HOST,
+      initialCwd: KALI_HOME,
       filesystem: DEFAULT_NETWORK_VFS,
+      theme: "kali",
     };
   }
   if (pathId === "web-security") {
     return {
-      username: "student",
-      hostname: "web-lab",
-      initialCwd: "/home/student",
+      username: KALI_USER,
+      hostname: KALI_HOST,
+      initialCwd: KALI_HOME,
       filesystem: WEB_VFS,
+      theme: "kali",
     };
   }
   if (pathId === "soc") {
     return {
-      username: "analyst",
-      hostname: "soc-console",
-      initialCwd: "/home/analyst",
+      username: KALI_USER,
+      hostname: KALI_HOST,
+      initialCwd: KALI_HOME,
       filesystem: SOC_VFS,
+      theme: "kali",
     };
   }
   if (pathId === "forensics") {
     return {
-      username: "investigator",
-      hostname: "forensics-lab",
-      initialCwd: "/home/investigator",
+      username: KALI_USER,
+      hostname: KALI_HOST,
+      initialCwd: KALI_HOME,
       filesystem: FORENSICS_VFS,
+      theme: "kali",
     };
   }
   if (pathId === "windows") {
@@ -475,12 +566,14 @@ export function defaultScenarioForPath(pathId: string): LessonTerminalScenario {
       initialCwd: "/Users/student",
       prompt: "PS C:\\Users\\student>",
       filesystem: WINDOWS_VFS,
+      theme: "windows",
     };
   }
   return {
-    username: "student",
-    hostname: "hacknology-lab",
-    initialCwd: "/home/student",
+    username: KALI_USER,
+    hostname: KALI_HOST,
+    initialCwd: KALI_HOME,
     filesystem: DEFAULT_LINUX_VFS,
+    theme: "kali",
   };
 }

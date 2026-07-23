@@ -159,7 +159,7 @@ export const osintTerminals = {
   "osint-metadata": lab(
     "Metadata OSINT lab",
     "Compare file metadata with domain registration data to spot inconsistencies.",
-    { ...FORENSICS_SCENARIO, initialCwd: "/home/investigator" },
+    { ...FORENSICS_SCENARIO },
     [
       step(
         "cd-evidence",
