@@ -11,7 +11,7 @@ export default function GamePage() {
       <PageHeader
         eyebrow="Nerd Games · Highlight"
         title="Cyber Rider"
-        description="One-track stick-bike stunt run. Hit the gas, survive the hills and jumps, and chase a personal-best finish time."
+        description="Stick-bike stunt run with real airtime, flips, and combo tricks. Clear the track fast — or wipe out on a bad landing."
         icon={PlayIcon}
       />
       <PageContainer className="py-8">

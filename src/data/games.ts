@@ -58,7 +58,7 @@ export const nerdGames: NerdGame[] = [
     id: "stick-rider",
     title: "Cyber Rider",
     description:
-      "One-track stick-bike stunt run — hills, jumps, and balance challenges. Chase a personal-best finish time.",
+      "Stick-bike stunt run with ramps, gaps, aerial flips, and combo scoring. Chase a personal-best finish time.",
     category: "Arcade",
     difficulty: "Intermediate",
     estimatedMinutes: 5,

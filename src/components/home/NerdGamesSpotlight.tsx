@@ -32,8 +32,8 @@ export function NerdGamesSpotlight() {
               <div>
                 <h3 className="text-balance text-2xl font-bold text-white sm:text-3xl">{highlight.title}</h3>
                 <p className="mt-2 max-w-lg text-sm leading-relaxed text-slate-400 sm:text-base">
-                  One-track stick-bike stunt run — balance hills, stick landings, and race to the finish. Beat your
-                  personal best time stored locally on your device.
+                  Physics-driven stunt run — launch off varied ramps, chain aerial flips, nail landings, and race to the
+                  finish. Best time saved locally on your device.
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -59,16 +59,27 @@ export function NerdGamesSpotlight() {
             >
               <div className="absolute inset-0 bg-grid-faint bg-grid opacity-40 [mask-image:linear-gradient(to_bottom,black,transparent)]" />
               <svg viewBox="0 0 400 220" className="relative h-full w-full transition group-hover:opacity-95" aria-hidden>
+                <defs>
+                  <linearGradient id="ng-track" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.3" />
+                    <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.6" />
+                  </linearGradient>
+                </defs>
                 <path d="M0 170 Q80 150 140 165 T260 130 T400 150 L400 220 L0 220 Z" fill="#0f172a" />
-                <path d="M0 170 Q80 150 140 165 T260 130 T400 150" fill="none" stroke="#22d3ee" strokeWidth="3" />
-                <g stroke="#f8fafc" strokeWidth="3" strokeLinecap="round" fill="none">
-                  <circle cx="145" cy="158" r="12" />
-                  <circle cx="185" cy="145" r="12" />
-                  <path d="M145 158 L165 132 L185 145" />
-                  <path d="M165 132 L160 108 L175 92 L188 88" />
-                  <circle cx="176" cy="82" r="8" fill="#22d3ee" stroke="#f8fafc" />
+                <path d="M0 170 Q80 150 140 165 T260 130 T400 150" fill="none" stroke="url(#ng-track)" strokeWidth="3" />
+                <g className="motion-safe:animate-hero-bike-air" style={{ transformOrigin: "165px 145px" }}>
+                  <g stroke="#f8fafc" strokeWidth="3" strokeLinecap="round" fill="none">
+                    <circle cx="145" cy="158" r="12" className="motion-safe:animate-hero-wheel" />
+                    <circle cx="185" cy="145" r="12" className="motion-safe:animate-hero-wheel" />
+                    <path d="M145 158 L165 132 L185 145" />
+                    <path d="M165 132 L160 108 L175 92 L188 88" />
+                    <circle cx="176" cy="82" r="8" fill="#22d3ee" stroke="#f8fafc" />
+                  </g>
                 </g>
               </svg>
+              <span className="absolute bottom-4 right-4 rounded-full border border-accent-400/30 bg-accent-400/10 px-3 py-1 text-[10px] font-medium text-accent-200 opacity-0 transition group-hover:opacity-100">
+                Play now →
+              </span>
             </Link>
           </div>
         </Card>

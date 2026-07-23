@@ -72,6 +72,7 @@ export default {
       },
       backgroundSize: {
         grid: "44px 44px",
+        "grid-lg": "72px 72px",
       },
       keyframes: {
         "fade-in-up": {
@@ -82,10 +83,41 @@ export default {
           "0%, 100%": { opacity: "0.6" },
           "50%": { opacity: "1" },
         },
+        "drift-slow": {
+          "0%, 100%": { transform: "translate(0, 0) scale(1)" },
+          "50%": { transform: "translate(3%, 2%) scale(1.05)" },
+        },
+        "drift-reverse": {
+          "0%, 100%": { transform: "translate(0, 0)" },
+          "50%": { transform: "translate(-4%, 3%)" },
+        },
+        "cursor-blink": {
+          "0%, 49%": { opacity: "1" },
+          "50%, 100%": { opacity: "0.35" },
+        },
+        "code-marquee": {
+          "0%": { transform: "translateX(0)" },
+          "100%": { transform: "translateX(-50%)" },
+        },
+        "hero-bike-air": {
+          "0%, 100%": { transform: "translateY(0) rotate(0deg)" },
+          "45%": { transform: "translateY(-10px) rotate(-18deg)" },
+          "70%": { transform: "translateY(-4px) rotate(6deg)" },
+        },
+        "hero-wheel": {
+          "0%": { transform: "rotate(0deg)" },
+          "100%": { transform: "rotate(360deg)" },
+        },
       },
       animation: {
         "fade-in-up": "fade-in-up 0.5s ease-out both",
         "pulse-soft": "pulse-soft 3s ease-in-out infinite",
+        "drift-slow": "drift-slow 18s ease-in-out infinite",
+        "drift-reverse": "drift-reverse 22s ease-in-out infinite",
+        "cursor-blink": "cursor-blink 1.2s step-end infinite",
+        "code-marquee": "code-marquee 45s linear infinite",
+        "hero-bike-air": "hero-bike-air 2.8s ease-in-out infinite",
+        "hero-wheel": "hero-wheel 0.6s linear infinite",
       },
     },
   },

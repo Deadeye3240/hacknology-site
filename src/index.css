@@ -57,6 +57,33 @@
         rgba(5, 7, 13, 0) 75%
       );
   }
+
+  .home-scanlines {
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(255, 255, 255, 0.03) 2px,
+      rgba(255, 255, 255, 0.03) 3px
+    );
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .motion-safe\:animate-drift-slow,
+  .motion-safe\:animate-drift-reverse,
+  .motion-safe\:animate-code-marquee,
+  .motion-safe\:animate-hero-bike-air,
+  .motion-safe\:animate-hero-wheel,
+  .motion-safe\:animate-cursor-blink,
+  .motion-safe\:animate-pulse-soft {
+    animation: none !important;
+  }
+
+  .motion-safe\:transition-all,
+  .motion-safe\:transition-transform {
+    transition: none !important;
+  }
 }
 
 /* Thin, themed scrollbar */

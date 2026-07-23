@@ -27,30 +27,43 @@ export function CyberRiderCanvas({ onStatusChange }: CyberRiderCanvasProps) {
   const inputRef = useRef<InputState>(emptyInput());
   const frameRef = useRef<number | null>(null);
   const lastTimeRef = useRef(0);
+  const statusRef = useRef<Status>("ready");
 
   const [status, setStatus] = useState<Status>("ready");
   const [elapsedMs, setElapsedMs] = useState(0);
   const [bestTime, setBestTime] = useState<number | null>(() => getBestTime("stick-rider"));
   const [isNewBest, setIsNewBest] = useState(false);
   const [speed, setSpeed] = useState(0);
+  const [trickScore, setTrickScore] = useState(0);
+  const [combo, setCombo] = useState(0);
+  const [crashReason, setCrashReason] = useState("");
 
   const reset = useCallback(() => {
     bikeRef.current = createBike();
     cameraRef.current = 0;
     inputRef.current = emptyInput();
     lastTimeRef.current = 0;
+    statusRef.current = "ready";
     setStatus("ready");
     setElapsedMs(0);
     setIsNewBest(false);
     setSpeed(0);
+    setTrickScore(0);
+    setCombo(0);
+    setCrashReason("");
   }, []);
 
   const beginIfReady = useCallback(() => {
     if (bikeRef.current.phase === "ready") {
       startRun(bikeRef.current);
+      statusRef.current = "playing";
       setStatus("playing");
     }
   }, []);
+
+  useEffect(() => {
+    statusRef.current = status;
+  }, [status]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -83,21 +96,27 @@ export function CyberRiderCanvas({ onStatusChange }: CyberRiderCanvasProps) {
         cameraRef.current = cameraXForBike(bike.x, cameraRef.current);
         setElapsedMs(Math.round(bike.elapsedMs));
         setSpeed(Math.round(Math.abs(bike.vx) * 14));
+        setTrickScore(bike.trickScore);
+        setCombo(bike.combo);
       }
 
       const phase = bike.phase;
-      if (phase === "crashed" && status !== "crashed") {
+      if (phase === "crashed" && statusRef.current !== "crashed") {
+        statusRef.current = "crashed";
+        setCrashReason(bike.crashReason);
         setStatus("crashed");
         onStatusChange?.("crashed", bike.elapsedMs);
-      } else if (phase === "finished" && status !== "finished") {
+      } else if (phase === "finished" && statusRef.current !== "finished") {
         const result = recordGameTime("stick-rider", bike.elapsedMs);
         setBestTime(result.best);
         setIsNewBest(result.isNewBest);
+        setTrickScore(bike.trickScore);
+        statusRef.current = "finished";
         setStatus("finished");
         onStatusChange?.("finished", bike.elapsedMs);
       }
 
-      renderFrame(ctx, bike, CYBER_RIDER_TRACK, cameraRef.current, bike.wheelRotation);
+      renderFrame(ctx, bike, CYBER_RIDER_TRACK, cameraRef.current);
       frameRef.current = requestAnimationFrame(loop);
     };
 
@@ -155,6 +174,7 @@ export function CyberRiderCanvas({ onStatusChange }: CyberRiderCanvasProps) {
         <div className="flex flex-wrap gap-2">
           <StatPill label="Time" value={formatGameTime(elapsedMs)} accent />
           <StatPill label="Speed" value={String(speed)} />
+          <StatPill label="Tricks" value={String(trickScore)} highlight={combo > 1} />
           {bestTime !== null && <StatPill label="Best" value={formatGameTime(bestTime)} />}
         </div>
         <Button onClick={reset} size="sm" variant="secondary">
@@ -168,11 +188,13 @@ export function CyberRiderCanvas({ onStatusChange }: CyberRiderCanvasProps) {
         {status !== "playing" && status !== "ready" && (
           <div className="absolute inset-0 flex items-center justify-center bg-base-950/70 backdrop-blur-sm">
             <div className="mx-4 max-w-sm rounded-2xl border border-white/10 bg-base-950/95 px-8 py-7 text-center shadow-2xl">
-              <p className="text-3xl font-black text-white">{status === "crashed" ? "Wiped out" : "Track cleared"}</p>
+              <p className="text-3xl font-black text-white">
+                {status === "crashed" ? "Wiped out" : "Track cleared"}
+              </p>
               <p className="mt-2 text-sm text-slate-400">
                 {status === "crashed"
-                  ? "You lost balance or hit the ground. Line up your landing and try again."
-                  : `Finished in ${formatGameTime(elapsedMs)}.`}
+                  ? crashReason || "You lost balance or hit the ground. Line up your landing and try again."
+                  : `Finished in ${formatGameTime(elapsedMs)}${trickScore > 0 ? ` · ${trickScore} trick pts` : ""}.`}
               </p>
               {isNewBest && status === "finished" && (
                 <p className="mt-2 text-sm font-medium text-accent-300">New personal best saved locally.</p>
@@ -194,12 +216,12 @@ export function CyberRiderCanvas({ onStatusChange }: CyberRiderCanvasProps) {
           onUp={() => setTouch("gas", false)}
         />
         <TouchButton
-          label="Lean F"
+          label="Flip F"
           onDown={() => setTouch("leanForward", true)}
           onUp={() => setTouch("leanForward", false)}
         />
         <TouchButton
-          label="Lean B"
+          label="Flip B"
           className="col-span-3"
           onDown={() => setTouch("leanBack", true)}
           onUp={() => setTouch("leanBack", false)}
@@ -209,17 +231,34 @@ export function CyberRiderCanvas({ onStatusChange }: CyberRiderCanvasProps) {
       <div className="hidden gap-3 sm:grid sm:grid-cols-3">
         <ControlHint title="Gas" keys="D / → / Space" />
         <ControlHint title="Brake" keys="A / ←" />
-        <ControlHint title="Lean in air" keys="W/S or ↑/↓" />
+        <ControlHint title="Flips in air" keys="W/S or ↑/↓" />
       </div>
     </div>
   );
 }
 
-function StatPill({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+function StatPill({
+  label,
+  value,
+  accent,
+  highlight,
+}: {
+  label: string;
+  value: string;
+  accent?: boolean;
+  highlight?: boolean;
+}) {
   return (
     <div className="rounded-lg border border-white/10 bg-surface/60 px-3 py-2">
       <p className="font-mono text-[10px] uppercase tracking-widest text-slate-500">{label}</p>
-      <p className={cn("font-mono text-sm font-semibold", accent ? "text-accent-300" : "text-white")}>{value}</p>
+      <p
+        className={cn(
+          "font-mono text-sm font-semibold",
+          highlight ? "text-emerald-300" : accent ? "text-accent-300" : "text-white",
+        )}
+      >
+        {value}
+      </p>
     </div>
   );
 }
